@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+
+# Environment
+.env
+.env.local
+
+# Database
+*.db
+*.db.backup_*
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+dist/
+build/
+*.egg-info/
+
+# Vite
+frontend/.vite/

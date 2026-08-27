@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Google Sans', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: #f5f5f5;
+  color: #2E2E2E;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+input:focus, select:focus, textarea:focus {
+  box-shadow: 0 1px 2px 0 rgba(0,0,0,0.1), 0 1px 3px 1px rgba(0,0,0,0.08);
+}
+
+.gmail-chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #d4d4d4;
+  border-radius: 8px;
+  padding: 0 12px;
+  height: 32px;
+  font-size: 13px;
+  color: #333;
+  background: white;
+  transition: background 0.15s;
+}
+.gmail-chip:hover {
+  background: #f0f0f0;
+}
+
+.gmail-row:hover {
+  background-color: #f8f8f8;
+}
+
+.gmail-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* Print styles */
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+  body {
+    background: white !important;
+  }
+  body > *:not(#print-slip-content) {
+    display: none !important;
+  }
+  #print-slip-content {
+    display: block !important;
+    position: relative;
+    width: 100%;
+    border: 2px solid #2E2E2E;
+    padding: 20px;
+    background: white;
+  }
+}
