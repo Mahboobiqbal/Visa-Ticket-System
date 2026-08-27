@@ -10,6 +10,7 @@ __pycache__/
 # Database
 *.db
 *.db.backup_*
+backups/
 
 # IDE
 .vscode/

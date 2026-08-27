@@ -22,12 +22,14 @@ export function AuthProvider({ children }) {
   const login = async (username, password) => {
     const res = await api.post('/auth/login', { username, password });
     localStorage.setItem('token', res.data.access_token);
+    localStorage.setItem('refreshToken', res.data.refresh_token);
     const me = await api.get('/auth/me');
     setUser(me.data);
   };
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     setUser(null);
   };
 

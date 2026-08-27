@@ -4,8 +4,16 @@ from sqlalchemy.orm import Session
 from database import engine, get_db, Base
 from models import User, Settings
 from schemas import LoginRequest, TokenResponse, UserOut, SettingCreate
-from auth import hash_password, verify_password, create_access_token, get_current_user
+from auth import (
+    get_password_hash, verify_password, create_access_token,
+    create_refresh_token, decode_token, get_current_user, SECRET_KEY
+)
 from routers import agents, tickets, visas, cashouts, settings, dashboard, backup
+
+import os
+import shutil
+from datetime import datetime
+from apscheduler.schedulers.background import BackgroundScheduler
 
 Base.metadata.create_all(bind=engine)
 
@@ -34,7 +42,7 @@ def init_db():
     if not admin:
         db.add(User(
             username="admin",
-            password=hash_password("admin123"),
+            password=get_password_hash("admin123"),
             full_name="Administrator",
             role="admin",
         ))
@@ -59,13 +67,59 @@ def init_db():
 init_db()
 
 
+# Automated backup scheduler
+BACKUP_DIR = os.path.join(os.path.dirname(__file__), "backups")
+os.makedirs(BACKUP_DIR, exist_ok=True)
+
+def automated_backup():
+    try:
+        from database import DATABASE_URL
+        if "sqlite" in DATABASE_URL:
+            db_path = DATABASE_URL.replace("sqlite:///", "").replace("sqlite://", "")
+            if os.path.exists(db_path):
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                backup_file = os.path.join(BACKUP_DIR, f"backup_{timestamp}.db")
+                shutil.copy2(db_path, backup_file)
+                # Keep only last 30 backups
+                backups = sorted([f for f in os.listdir(BACKUP_DIR) if f.endswith('.db')])
+                for old in backups[:-30]:
+                    os.remove(os.path.join(BACKUP_DIR, old))
+    except Exception as e:
+        print(f"Backup error: {e}")
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(automated_backup, 'interval', hours=6)
+scheduler.start()
+
+
 @app.post("/api/auth/login", response_model=TokenResponse)
 def login(req: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == req.username).first()
     if not user or not verify_password(req.password, user.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    token = create_access_token({"sub": user.username})
-    return TokenResponse(access_token=token)
+    access_token = create_access_token({"sub": str(user.id)})
+    refresh_token = create_refresh_token({"sub": str(user.id)})
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token
+    )
+
+
+@app.post("/api/auth/refresh", response_model=TokenResponse)
+def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
+    payload = decode_token(refresh_token)
+    if not payload or payload.get("type") != "refresh":
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+    user_id = payload.get("sub")
+    user = db.query(User).filter(User.id == int(user_id)).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    new_access = create_access_token({"sub": str(user.id)})
+    new_refresh = create_refresh_token({"sub": str(user.id)})
+    return TokenResponse(
+        access_token=new_access,
+        refresh_token=new_refresh
+    )
 
 
 @app.get("/api/auth/me", response_model=UserOut)
