@@ -12,6 +12,26 @@ const emptyForm = {
   commission: '', payment_received: '', payment_status: 'pending', notes: '',
 };
 
+function InputField({ label, type = "text", ...props }) {
+  return (
+    <div>
+      <label className="block text-[12px] font-medium text-[#5f6368] mb-1.5 uppercase tracking-wider">{label}</label>
+      <input type={type} {...props} className="w-full px-3 py-2.5 border border-[#dadce0] rounded-lg text-[13px] text-[#202124] focus:border-[#E74C3C] focus:ring-0 outline-none transition-colors" />
+    </div>
+  );
+}
+
+function SelectField({ label, children, ...props }) {
+  return (
+    <div>
+      <label className="block text-[12px] font-medium text-[#5f6368] mb-1.5 uppercase tracking-wider">{label}</label>
+      <select {...props} className="w-full px-3 py-2.5 border border-[#dadce0] rounded-lg text-[13px] text-[#202124] focus:border-[#E74C3C] focus:ring-0 outline-none transition-colors bg-white">
+        {children}
+      </select>
+    </div>
+  );
+}
+
 export default function Tickets() {
   const [tickets, setTickets] = useState([]);
   const [agents, setAgents] = useState([]);
@@ -71,22 +91,6 @@ export default function Tickets() {
     toast.success('Ticket deleted');
     load();
   };
-
-  const InputField = ({ label, ...props }) => (
-    <div>
-      <label className="block text-[12px] font-medium text-[#5f6368] mb-1.5 uppercase tracking-wider">{label}</label>
-      <input {...props} className="w-full px-3 py-2.5 border border-[#dadce0] rounded-lg text-[13px] text-[#202124] focus:border-[#E74C3C] focus:ring-0 outline-none transition-colors" />
-    </div>
-  );
-
-  const SelectField = ({ label, children, ...props }) => (
-    <div>
-      <label className="block text-[12px] font-medium text-[#5f6368] mb-1.5 uppercase tracking-wider">{label}</label>
-      <select {...props} className="w-full px-3 py-2.5 border border-[#dadce0] rounded-lg text-[13px] text-[#202124] focus:border-[#E74C3C] focus:ring-0 outline-none transition-colors bg-white">
-        {children}
-      </select>
-    </div>
-  );
 
   return (
     <div className="max-w-6xl mx-auto">
