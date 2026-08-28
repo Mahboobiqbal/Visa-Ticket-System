@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import Modal from '../components/Modal';
 import toast from 'react-hot-toast';
-import { Plus, Edit2, Trash2, Search, Filter, X, Ticket } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Filter, X, Ticket, Download } from 'lucide-react';
 
 const emptyForm = {
   agent_id: '', passenger_name: '', passport_number: '', passport_expiry: '',
@@ -49,6 +49,20 @@ export default function Tickets() {
     if (filterAgent) params.agent_id = filterAgent;
     if (search) params.search = search;
     api.get('/tickets/', { params }).then(res => setTickets(res.data));
+  };
+
+  const exportCSV = () => {
+    const params = {};
+    if (filterAgent) params.agent_id = filterAgent;
+    if (search) params.search = search;
+    api.get('/tickets/export', { params, responseType: 'blob' }).then(res => {
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'tickets_export.csv';
+      a.click();
+      window.URL.revokeObjectURL(url);
+    });
   };
 
   useEffect(() => {
@@ -99,9 +113,14 @@ export default function Tickets() {
           <h1 className="text-[22px] font-normal text-[#202124]">Ticket Bookings</h1>
           <p className="text-[13px] text-[#5f6368] mt-0.5">{tickets.length} booking{tickets.length !== 1 ? 's' : ''} total</p>
         </div>
-        <button onClick={openAdd} className="flex items-center gap-2 bg-[#E74C3C] text-white px-5 py-2.5 rounded-full text-[13px] font-medium hover:bg-[#C0392B] hover:shadow-[0_1px_3px_0_rgba(60,64,67,0.3)] transition-all">
-          <Plus size={18} /> New Booking
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={exportCSV} className="flex items-center gap-2 bg-white border border-[#dadce0] text-[#5f6368] px-4 py-2.5 rounded-full text-[13px] font-medium hover:bg-[#f1f3f4] transition-all">
+            <Download size={16} /> Export CSV
+          </button>
+          <button onClick={openAdd} className="flex items-center gap-2 bg-[#E74C3C] text-white px-5 py-2.5 rounded-full text-[13px] font-medium hover:bg-[#C0392B] hover:shadow-[0_1px_3px_0_rgba(60,64,67,0.3)] transition-all">
+            <Plus size={18} /> New Booking
+          </button>
+        </div>
       </div>
 
       {/* Search & Filter bar */}

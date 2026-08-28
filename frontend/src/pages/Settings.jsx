@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '../api';
 import toast from 'react-hot-toast';
-import { Save, Plus, X, Download, Upload, Server, Clock, RefreshCw } from 'lucide-react';
+import { Save, Plus, X, Download, Upload, Server, Clock, RefreshCw, Lock } from 'lucide-react';
 
 const settingConfigs = [
   { key: 'visa_types', label: 'Visa Types', description: 'Comma-separated list of visa types' },
@@ -17,6 +17,8 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [backupStats, setBackupStats] = useState(null);
   const [importing, setImporting] = useState(false);
+  const [passwords, setPasswords] = useState({ current_password: '', new_password: '', confirm_password: '' });
+  const [changingPassword, setChangingPassword] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -89,6 +91,31 @@ export default function Settings() {
     }
   };
 
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (passwords.new_password !== passwords.confirm_password) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    if (passwords.new_password.length < 6) {
+      toast.error('New password must be at least 6 characters');
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      await api.post('/auth/change-password', {
+        current_password: passwords.current_password,
+        new_password: passwords.new_password,
+      });
+      toast.success('Password changed successfully');
+      setPasswords({ current_password: '', new_password: '', confirm_password: '' });
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Error changing password');
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   if (loading) return (
     <div className="flex items-center justify-center h-64">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E74C3C]"></div>
@@ -99,6 +126,39 @@ export default function Settings() {
     <div className="max-w-4xl mx-auto">
       <h1 className="text-[22px] font-normal text-[#202124] mb-1">Settings</h1>
       <p className="text-[13px] text-[#5f6368] mb-6">Manage dropdown values and system data</p>
+
+      {/* Password Change Section */}
+      <div className="bg-white rounded-xl border border-[#e0e0e0] overflow-hidden mb-6">
+        <div className="px-6 py-4 border-b border-[#e0e0e0] flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-[#f0f0f0] flex items-center justify-center">
+            <Lock size={18} className="text-[#E74C3C]" />
+          </div>
+          <div>
+            <h3 className="text-[15px] font-medium text-[#202124]">Change Password</h3>
+            <p className="text-[12px] text-[#5f6368]">Update your account password</p>
+          </div>
+        </div>
+        <form onSubmit={handleChangePassword} className="p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+            <div>
+              <label className="block text-[12px] font-medium text-[#5f6368] mb-1.5 uppercase tracking-wider">Current Password</label>
+              <input type="password" value={passwords.current_password} onChange={e => setPasswords({...passwords, current_password: e.target.value})} required className="w-full px-3 py-2.5 border border-[#dadce0] rounded-lg text-[13px] focus:border-[#E74C3C] focus:ring-0 outline-none" />
+            </div>
+            <div>
+              <label className="block text-[12px] font-medium text-[#5f6368] mb-1.5 uppercase tracking-wider">New Password</label>
+              <input type="password" value={passwords.new_password} onChange={e => setPasswords({...passwords, new_password: e.target.value})} required minLength={6} className="w-full px-3 py-2.5 border border-[#dadce0] rounded-lg text-[13px] focus:border-[#E74C3C] focus:ring-0 outline-none" />
+            </div>
+            <div>
+              <label className="block text-[12px] font-medium text-[#5f6368] mb-1.5 uppercase tracking-wider">Confirm New Password</label>
+              <input type="password" value={passwords.confirm_password} onChange={e => setPasswords({...passwords, confirm_password: e.target.value})} required minLength={6} className="w-full px-3 py-2.5 border border-[#dadce0] rounded-lg text-[13px] focus:border-[#E74C3C] focus:ring-0 outline-none" />
+            </div>
+          </div>
+          <button type="submit" disabled={changingPassword} className="flex items-center gap-2 bg-[#E74C3C] text-white px-5 py-2.5 rounded-full text-[13px] font-medium hover:bg-[#C0392B] transition-all disabled:opacity-50">
+            {changingPassword ? <RefreshCw size={16} className="animate-spin" /> : <Lock size={16} />}
+            {changingPassword ? 'Changing...' : 'Change Password'}
+          </button>
+        </form>
+      </div>
 
       {/* Backup Section */}
       <div className="bg-white rounded-xl border border-[#e0e0e0] overflow-hidden mb-6">

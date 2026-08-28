@@ -4,6 +4,7 @@ from database import get_db
 from models import Agent
 from schemas import AgentCreate, AgentUpdate, AgentOut
 from auth import get_current_user
+from routers.activity import log_activity
 
 router = APIRouter(prefix="/api/agents", tags=["agents"])
 
@@ -19,6 +20,7 @@ def create_agent(agent: AgentCreate, db: Session = Depends(get_db), user=Depends
     db.add(db_agent)
     db.commit()
     db.refresh(db_agent)
+    log_activity(db, user, "create", "agent", db_agent.id, f"Name: {db_agent.name}")
     return db_agent
 
 
@@ -39,6 +41,7 @@ def update_agent(agent_id: int, update: AgentUpdate, db: Session = Depends(get_d
         setattr(agent, key, value)
     db.commit()
     db.refresh(agent)
+    log_activity(db, user, "update", "agent", agent.id, f"Name: {agent.name}")
     return agent
 
 
@@ -47,6 +50,8 @@ def delete_agent(agent_id: int, db: Session = Depends(get_db), user=Depends(get_
     agent = db.query(Agent).filter(Agent.id == agent_id).first()
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
+    name = agent.name
     db.delete(agent)
     db.commit()
+    log_activity(db, user, "delete", "agent", agent_id, f"Name: {name}")
     return {"detail": "Agent deleted"}

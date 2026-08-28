@@ -12,6 +12,7 @@ import {
   Menu,
   Search,
   Plus,
+  Clock,
 } from 'lucide-react';
 
 const navItems = [
@@ -20,6 +21,7 @@ const navItems = [
   { to: '/visas', icon: Stamp, label: 'Visa Processing' },
   { to: '/cashout', icon: Banknote, label: 'Cash Out' },
   { to: '/agents', icon: Users, label: 'Agents' },
+  { to: '/activity', icon: Clock, label: 'Activity' },
 ];
 
 export const HeaderActionsContext = createContext(null);

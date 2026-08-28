@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import Modal from '../components/Modal';
 import toast from 'react-hot-toast';
-import { Plus, Edit2, Trash2, Search, Filter, X, Banknote } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Filter, X, Banknote, Download } from 'lucide-react';
 
 const emptyForm = {
   agent_id: '', visa_id: '', ticket_id: '', name: '',
@@ -26,6 +26,20 @@ export default function CashOut() {
     if (filterAgent) params.agent_id = filterAgent;
     if (search) params.search = search;
     api.get('/cashouts/', { params }).then(res => setCashouts(res.data));
+  };
+
+  const exportCSV = () => {
+    const params = {};
+    if (filterAgent) params.agent_id = filterAgent;
+    if (search) params.search = search;
+    api.get('/cashouts/export', { params, responseType: 'blob' }).then(res => {
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'cashouts_export.csv';
+      a.click();
+      window.URL.revokeObjectURL(url);
+    });
   };
 
   useEffect(() => { api.get('/agents/').then(res => setAgents(res.data)); }, []);
@@ -76,9 +90,14 @@ export default function CashOut() {
           <h1 className="text-[22px] font-normal text-[#202124]">Cash Out</h1>
           <p className="text-[13px] text-[#5f6368] mt-0.5">{cashouts.length} record{cashouts.length !== 1 ? 's' : ''}</p>
         </div>
-        <button onClick={openAdd} className="flex items-center gap-2 bg-[#E74C3C] text-white px-5 py-2.5 rounded-full text-[13px] font-medium hover:bg-[#C0392B] transition-all">
-          <Plus size={18} /> New Cash Out
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={exportCSV} className="flex items-center gap-2 bg-white border border-[#dadce0] text-[#5f6368] px-4 py-2.5 rounded-full text-[13px] font-medium hover:bg-[#f1f3f4] transition-all">
+            <Download size={16} /> Export CSV
+          </button>
+          <button onClick={openAdd} className="flex items-center gap-2 bg-[#E74C3C] text-white px-5 py-2.5 rounded-full text-[13px] font-medium hover:bg-[#C0392B] transition-all">
+            <Plus size={18} /> New Cash Out
+          </button>
+        </div>
       </div>
 
       {/* Summary Cards */}

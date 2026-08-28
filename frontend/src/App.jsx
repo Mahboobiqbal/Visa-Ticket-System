@@ -12,6 +12,7 @@ import CashOutDetail from './pages/CashOutDetail';
 import Agents from './pages/Agents';
 import AgentDetail from './pages/AgentDetail';
 import Settings from './pages/Settings';
+import Activity from './pages/Activity';
 import Layout from './components/Layout';
 
 function ProtectedRoute({ children }) {
@@ -36,6 +37,7 @@ function AppRoutes() {
         <Route path="agents" element={<Agents />} />
         <Route path="agents/:id" element={<AgentDetail />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="activity" element={<Activity />} />
       </Route>
     </Routes>
   );

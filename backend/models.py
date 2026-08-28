@@ -106,3 +106,16 @@ class Settings(Base):
     id = Column(Integer, primary_key=True, index=True)
     key = Column(String, unique=True, index=True)
     value = Column(Text, default="")
+
+
+class ActivityLog(Base):
+    __tablename__ = "activity_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    username = Column(String, default="")
+    action = Column(String)
+    entity_type = Column(String)
+    entity_id = Column(Integer)
+    details = Column(Text, default="")
+    created_at = Column(DateTime, default=datetime.utcnow)

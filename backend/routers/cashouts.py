@@ -4,6 +4,7 @@ from database import get_db
 from models import CashOut, Agent
 from schemas import CashOutCreate, CashOutUpdate, CashOutOut
 from auth import get_current_user
+from routers.activity import log_activity
 from typing import Optional
 
 router = APIRouter(prefix="/api/cashouts", tags=["cashouts"])
@@ -38,6 +39,7 @@ def create_cashout(cashout: CashOutCreate, db: Session = Depends(get_db), user=D
     db.commit()
     db.refresh(db_cashout)
     agent = db.query(Agent).filter(Agent.id == db_cashout.agent_id).first() if db_cashout.agent_id else None
+    log_activity(db, user, "create", "cashout", db_cashout.id, f"Name: {db_cashout.name}, Amount: SAR {db_cashout.amount}")
     result = CashOutOut.model_validate(db_cashout)
     result.agent_name = agent.name if agent else ""
     return result
@@ -64,6 +66,7 @@ def update_cashout(cashout_id: int, update: CashOutUpdate, db: Session = Depends
     db.commit()
     db.refresh(cashout)
     agent = db.query(Agent).filter(Agent.id == cashout.agent_id).first() if cashout.agent_id else None
+    log_activity(db, user, "update", "cashout", cashout.id, f"Name: {cashout.name}, Amount: SAR {cashout.amount}")
     result = CashOutOut.model_validate(cashout)
     result.agent_name = agent.name if agent else ""
     return result
@@ -74,6 +77,9 @@ def delete_cashout(cashout_id: int, db: Session = Depends(get_db), user=Depends(
     cashout = db.query(CashOut).filter(CashOut.id == cashout_id).first()
     if not cashout:
         raise HTTPException(status_code=404, detail="Cash out not found")
+    name = cashout.name
+    amount = cashout.amount
     db.delete(cashout)
     db.commit()
+    log_activity(db, user, "delete", "cashout", cashout_id, f"Name: {name}, Amount: SAR {amount}")
     return {"detail": "Cash out deleted"}

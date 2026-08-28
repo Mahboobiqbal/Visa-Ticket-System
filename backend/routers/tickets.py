@@ -4,6 +4,7 @@ from database import get_db
 from models import TicketBooking, Agent
 from schemas import TicketCreate, TicketUpdate, TicketOut
 from auth import get_current_user
+from routers.activity import log_activity
 from typing import Optional
 
 router = APIRouter(prefix="/api/tickets", tags=["tickets"])
@@ -42,6 +43,7 @@ def create_ticket(ticket: TicketCreate, db: Session = Depends(get_db), user=Depe
     db.commit()
     db.refresh(db_ticket)
     agent = db.query(Agent).filter(Agent.id == db_ticket.agent_id).first()
+    log_activity(db, user, "create", "ticket", db_ticket.id, f"Passenger: {db_ticket.passenger_name}")
     result = TicketOut.model_validate(db_ticket)
     result.agent_name = agent.name if agent else ""
     return result
@@ -68,6 +70,7 @@ def update_ticket(ticket_id: int, update: TicketUpdate, db: Session = Depends(ge
     db.commit()
     db.refresh(ticket)
     agent = db.query(Agent).filter(Agent.id == ticket.agent_id).first()
+    log_activity(db, user, "update", "ticket", ticket.id, f"Passenger: {ticket.passenger_name}")
     result = TicketOut.model_validate(ticket)
     result.agent_name = agent.name if agent else ""
     return result
@@ -78,6 +81,8 @@ def delete_ticket(ticket_id: int, db: Session = Depends(get_db), user=Depends(ge
     ticket = db.query(TicketBooking).filter(TicketBooking.id == ticket_id).first()
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
+    name = ticket.passenger_name
     db.delete(ticket)
     db.commit()
+    log_activity(db, user, "delete", "ticket", ticket_id, f"Passenger: {name}")
     return {"detail": "Ticket deleted"}

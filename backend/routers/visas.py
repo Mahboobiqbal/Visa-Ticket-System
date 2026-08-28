@@ -4,6 +4,7 @@ from database import get_db
 from models import VisaProcessing, Agent
 from schemas import VisaCreate, VisaUpdate, VisaOut
 from auth import get_current_user
+from routers.activity import log_activity
 from typing import Optional
 
 router = APIRouter(prefix="/api/visas", tags=["visas"])
@@ -41,6 +42,7 @@ def create_visa(visa: VisaCreate, db: Session = Depends(get_db), user=Depends(ge
     db.commit()
     db.refresh(db_visa)
     agent = db.query(Agent).filter(Agent.id == db_visa.agent_id).first()
+    log_activity(db, user, "create", "visa", db_visa.id, f"Passenger: {db_visa.passenger_name}")
     result = VisaOut.model_validate(db_visa)
     result.agent_name = agent.name if agent else ""
     return result
@@ -67,6 +69,7 @@ def update_visa(visa_id: int, update: VisaUpdate, db: Session = Depends(get_db),
     db.commit()
     db.refresh(visa)
     agent = db.query(Agent).filter(Agent.id == visa.agent_id).first()
+    log_activity(db, user, "update", "visa", visa.id, f"Passenger: {visa.passenger_name}")
     result = VisaOut.model_validate(visa)
     result.agent_name = agent.name if agent else ""
     return result
@@ -77,6 +80,8 @@ def delete_visa(visa_id: int, db: Session = Depends(get_db), user=Depends(get_cu
     visa = db.query(VisaProcessing).filter(VisaProcessing.id == visa_id).first()
     if not visa:
         raise HTTPException(status_code=404, detail="Visa not found")
+    name = visa.passenger_name
     db.delete(visa)
     db.commit()
+    log_activity(db, user, "delete", "visa", visa_id, f"Passenger: {name}")
     return {"detail": "Visa deleted"}

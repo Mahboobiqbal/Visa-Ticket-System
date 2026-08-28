@@ -228,7 +228,8 @@ from auth import (
     get_password_hash, verify_password, create_access_token,
     create_refresh_token, decode_token, get_current_user, SECRET_KEY
 )
-from routers import agents, tickets, visas, cashouts, settings, dashboard, backup
+from routers import agents, tickets, visas, cashouts, settings, dashboard, backup, export, alerts, activity
+from schemas import PasswordChangeRequest
 from apscheduler.schedulers.background import BackgroundScheduler
 
 app = FastAPI(title="Visa Ticket System")
@@ -248,6 +249,9 @@ app.include_router(cashouts.router)
 app.include_router(settings.router)
 app.include_router(dashboard.router)
 app.include_router(backup.router)
+app.include_router(export.router)
+app.include_router(alerts.router)
+app.include_router(activity.router)
 
 
 # Automated backup scheduler
@@ -318,6 +322,17 @@ def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
 @app.get("/api/auth/me", response_model=UserOut)
 def get_me(user=Depends(get_current_user)):
     return user
+
+
+@app.post("/api/auth/change-password")
+def change_password(req: PasswordChangeRequest, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    if not verify_password(req.current_password, user.password):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    if len(req.new_password) < 6:
+        raise HTTPException(status_code=400, detail="New password must be at least 6 characters")
+    user.password = get_password_hash(req.new_password)
+    db.commit()
+    return {"message": "Password changed successfully"}
 
 
 if __name__ == "__main__":
