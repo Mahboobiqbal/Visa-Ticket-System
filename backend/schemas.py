@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, Field
+from typing import Optional, Literal
 from datetime import datetime
 
 
@@ -15,9 +15,13 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
+
 class PasswordChangeRequest(BaseModel):
     current_password: str
-    new_password: str
+    new_password: str = Field(min_length=6)
 
 
 # User
@@ -36,16 +40,16 @@ class AgentCreate(BaseModel):
     name: str
     phone: str = ""
     email: str = ""
-    commission_rate: float = 10.0
-    status: str = "active"
+    commission_rate: float = Field(default=10.0, ge=0, le=100)
+    status: Literal["active", "inactive"] = "active"
 
 
 class AgentUpdate(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
     email: Optional[str] = None
-    commission_rate: Optional[float] = None
-    status: Optional[str] = None
+    commission_rate: Optional[float] = Field(default=None, ge=0, le=100)
+    status: Optional[Literal["active", "inactive"]] = None
 
 
 class AgentOut(BaseModel):
@@ -62,7 +66,7 @@ class AgentOut(BaseModel):
 
 # Ticket Booking
 class TicketCreate(BaseModel):
-    agent_id: int
+    agent_id: int = Field(gt=0)
     passenger_name: str
     passport_number: str = ""
     passport_expiry: str = ""
@@ -73,16 +77,16 @@ class TicketCreate(BaseModel):
     booking_ref: str = ""
     departure_date: str
     return_date: str = ""
-    ticket_price: float = 0.0
-    selling_price: float = 0.0
-    commission: float = 0.0
-    payment_received: float = 0.0
-    payment_status: str = "pending"
+    ticket_price: float = Field(default=0.0, ge=0)
+    selling_price: float = Field(default=0.0, ge=0)
+    commission: float = Field(default=0.0, ge=0)
+    payment_received: float = Field(default=0.0, ge=0)
+    payment_status: Literal["pending", "paid", "partial"] = "pending"
     notes: str = ""
 
 
 class TicketUpdate(BaseModel):
-    agent_id: Optional[int] = None
+    agent_id: Optional[int] = Field(default=None, gt=0)
     passenger_name: Optional[str] = None
     passport_number: Optional[str] = None
     passport_expiry: Optional[str] = None
@@ -93,11 +97,11 @@ class TicketUpdate(BaseModel):
     booking_ref: Optional[str] = None
     departure_date: Optional[str] = None
     return_date: Optional[str] = None
-    ticket_price: Optional[float] = None
-    selling_price: Optional[float] = None
-    commission: Optional[float] = None
-    payment_received: Optional[float] = None
-    payment_status: Optional[str] = None
+    ticket_price: Optional[float] = Field(default=None, ge=0)
+    selling_price: Optional[float] = Field(default=None, ge=0)
+    commission: Optional[float] = Field(default=None, ge=0)
+    payment_received: Optional[float] = Field(default=None, ge=0)
+    payment_status: Optional[Literal["pending", "paid", "partial"]] = None
     notes: Optional[str] = None
 
 
@@ -129,43 +133,43 @@ class TicketOut(BaseModel):
 
 # Visa Processing
 class VisaCreate(BaseModel):
-    agent_id: int
+    agent_id: int = Field(gt=0)
     passenger_name: str
     passport_number: str = ""
     phone: str = ""
     occupation: str = ""
     visa_type: str = "umrah"
     package: str = "basic"
-    total_charges: float = 0.0
-    package_price: float = 0.0
-    total_commission: float = 0.0
-    payment_received: float = 0.0
-    payment_type: str = "cash"
-    payment_cash: float = 0.0
-    payment_bank: float = 0.0
-    total_expenses: float = 0.0
+    total_charges: float = Field(default=0.0, ge=0)
+    package_price: float = Field(default=0.0, ge=0)
+    total_commission: float = Field(default=0.0, ge=0)
+    payment_received: float = Field(default=0.0, ge=0)
+    payment_type: Literal["cash", "online_bank"] = "cash"
+    payment_cash: float = Field(default=0.0, ge=0)
+    payment_bank: float = Field(default=0.0, ge=0)
+    total_expenses: float = Field(default=0.0, ge=0)
     analysis: str = ""
-    status: str = "pending"
+    status: Literal["pending", "approved", "rejected"] = "pending"
 
 
 class VisaUpdate(BaseModel):
-    agent_id: Optional[int] = None
+    agent_id: Optional[int] = Field(default=None, gt=0)
     passenger_name: Optional[str] = None
     passport_number: Optional[str] = None
     phone: Optional[str] = None
     occupation: Optional[str] = None
     visa_type: Optional[str] = None
     package: Optional[str] = None
-    total_charges: Optional[float] = None
-    package_price: Optional[float] = None
-    total_commission: Optional[float] = None
-    payment_received: Optional[float] = None
-    payment_type: Optional[str] = None
-    payment_cash: Optional[float] = None
-    payment_bank: Optional[float] = None
-    total_expenses: Optional[float] = None
+    total_charges: Optional[float] = Field(default=None, ge=0)
+    package_price: Optional[float] = Field(default=None, ge=0)
+    total_commission: Optional[float] = Field(default=None, ge=0)
+    payment_received: Optional[float] = Field(default=None, ge=0)
+    payment_type: Optional[Literal["cash", "online_bank"]] = None
+    payment_cash: Optional[float] = Field(default=None, ge=0)
+    payment_bank: Optional[float] = Field(default=None, ge=0)
+    total_expenses: Optional[float] = Field(default=None, ge=0)
     analysis: Optional[str] = None
-    status: Optional[str] = None
+    status: Optional[Literal["pending", "approved", "rejected"]] = None
 
 
 class VisaOut(BaseModel):
@@ -196,24 +200,24 @@ class VisaOut(BaseModel):
 
 # Cash Out
 class CashOutCreate(BaseModel):
-    agent_id: Optional[int] = None
-    visa_id: Optional[int] = None
-    ticket_id: Optional[int] = None
+    agent_id: Optional[int] = Field(default=None, gt=0)
+    visa_id: Optional[int] = Field(default=None, gt=0)
+    ticket_id: Optional[int] = Field(default=None, gt=0)
     name: str
-    amount: float = 0.0
+    amount: float = Field(default=0.0, ge=0)
     date: str
-    payment_method: str = "cash"
+    payment_method: Literal["cash", "online_bank"] = "cash"
     comments: str = ""
 
 
 class CashOutUpdate(BaseModel):
-    agent_id: Optional[int] = None
-    visa_id: Optional[int] = None
-    ticket_id: Optional[int] = None
+    agent_id: Optional[int] = Field(default=None, gt=0)
+    visa_id: Optional[int] = Field(default=None, gt=0)
+    ticket_id: Optional[int] = Field(default=None, gt=0)
     name: Optional[str] = None
-    amount: Optional[float] = None
+    amount: Optional[float] = Field(default=None, ge=0)
     date: Optional[str] = None
-    payment_method: Optional[str] = None
+    payment_method: Optional[Literal["cash", "online_bank"]] = None
     comments: Optional[str] = None
 
 

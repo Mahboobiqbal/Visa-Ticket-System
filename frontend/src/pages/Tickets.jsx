@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api';
 import Modal from '../components/Modal';
 import toast from 'react-hot-toast';
@@ -37,24 +37,38 @@ export default function Tickets() {
   const [agents, setAgents] = useState([]);
   const [airlines, setAirlines] = useState([]);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [filterAgent, setFilterAgent] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [showFilters, setShowFilters] = useState(false);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchTimeout = useRef(null);
 
-  const load = () => {
+  useEffect(() => {
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    searchTimeout.current = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(searchTimeout.current);
+  }, [search]);
+
+  const load = useCallback(() => {
+    setLoading(true);
     const params = {};
     if (filterAgent) params.agent_id = filterAgent;
-    if (search) params.search = search;
-    api.get('/tickets/', { params }).then(res => setTickets(res.data));
-  };
+    if (debouncedSearch) params.search = debouncedSearch;
+    api.get('/tickets/', { params })
+      .then(res => setTickets(res.data))
+      .catch(() => toast.error('Failed to load tickets'))
+      .finally(() => setLoading(false));
+  }, [filterAgent, debouncedSearch]);
 
   const exportCSV = () => {
     const params = {};
     if (filterAgent) params.agent_id = filterAgent;
-    if (search) params.search = search;
+    if (debouncedSearch) params.search = debouncedSearch;
     api.get('/tickets/export', { params, responseType: 'blob' }).then(res => {
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const a = document.createElement('a');
@@ -62,15 +76,25 @@ export default function Tickets() {
       a.download = 'tickets_export.csv';
       a.click();
       window.URL.revokeObjectURL(url);
-    });
+    }).catch(() => toast.error('Export failed'));
   };
 
   useEffect(() => {
-    api.get('/agents/').then(res => setAgents(res.data));
+    api.get('/agents/').then(res => setAgents(res.data)).catch(() => {});
     api.get('/settings/airlines').then(res => setAirlines(res.data.value.split(','))).catch(() => {});
   }, []);
 
-  useEffect(() => { load(); }, [filterAgent, search]);
+  useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    if (location.state?.editId) {
+      const editId = location.state.editId;
+      api.get(`/tickets/${editId}`).then(res => {
+        openEdit(res.data);
+      }).catch(() => {});
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const openAdd = () => { setForm(emptyForm); setEditingId(null); setModalOpen(true); };
   const openEdit = (t) => {
@@ -96,15 +120,27 @@ export default function Tickets() {
       else { await api.post('/tickets/', data); toast.success('Ticket created'); }
       setModalOpen(false);
       load();
-    } catch (err) { toast.error('Error saving ticket'); }
+    } catch (err) { toast.error(err.response?.data?.detail || 'Error saving ticket'); }
   };
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this ticket?')) return;
-    await api.delete(`/tickets/${id}`);
-    toast.success('Ticket deleted');
-    load();
+    try {
+      await api.delete(`/tickets/${id}`);
+      toast.success('Ticket deleted');
+      load();
+    } catch (err) { toast.error('Error deleting ticket'); }
   };
+
+  useEffect(() => {
+    if (location.state?.editId) {
+      const editId = location.state.editId;
+      api.get(`/tickets/${editId}`).then(res => {
+        openEdit(res.data);
+      }).catch(() => {});
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -123,7 +159,6 @@ export default function Tickets() {
         </div>
       </div>
 
-      {/* Search & Filter bar */}
       <div className="bg-white rounded-xl border border-[#e0e0e0] mb-4 overflow-hidden">
         <div className="flex items-center gap-3 px-4 py-3">
           <div className="flex-1 flex items-center gap-2 bg-[#f1f3f4] rounded-full px-4 py-2">
@@ -161,8 +196,12 @@ export default function Tickets() {
         )}
       </div>
 
-      {/* Table */}
       <div className="bg-white rounded-xl border border-[#e0e0e0] overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center h-48">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E74C3C]"></div>
+          </div>
+        ) : (
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -195,8 +234,8 @@ export default function Tickets() {
                   </td>
                   <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
                     <div className="flex gap-1">
-                      <button onClick={() => openEdit(t)} className="p-1.5 rounded-full hover:bg-[#f1f3f4]"><Edit2 size={16} className="text-[#5f6368]" /></button>
-                      <button onClick={() => handleDelete(t.id)} className="p-1.5 rounded-full hover:bg-[#fce8e6]"><Trash2 size={16} className="text-[#d93025]" /></button>
+                      <button onClick={() => openEdit(t)} aria-label="Edit ticket" className="p-1.5 rounded-full hover:bg-[#f1f3f4]"><Edit2 size={16} className="text-[#5f6368]" /></button>
+                      <button onClick={() => handleDelete(t.id)} aria-label="Delete ticket" className="p-1.5 rounded-full hover:bg-[#fce8e6]"><Trash2 size={16} className="text-[#d93025]" /></button>
                     </div>
                   </td>
                 </tr>
@@ -204,9 +243,9 @@ export default function Tickets() {
             </tbody>
           </table>
         </div>
+        )}
       </div>
 
-      {/* Add/Edit Modal */}
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editingId ? 'Edit Booking' : 'New Booking'} wide>
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -240,10 +279,10 @@ export default function Tickets() {
             </SelectField>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <InputField label="Ticket Price" type="number" step="0.01" value={form.ticket_price} onChange={e => setForm({...form, ticket_price: e.target.value})} />
-            <InputField label="Selling Price" type="number" step="0.01" value={form.selling_price} onChange={e => setForm({...form, selling_price: e.target.value})} />
-            <InputField label="Commission" type="number" step="0.01" value={form.commission} onChange={e => setForm({...form, commission: e.target.value})} />
-            <InputField label="Payment Received" type="number" step="0.01" value={form.payment_received} onChange={e => setForm({...form, payment_received: e.target.value})} />
+            <InputField label="Ticket Price" type="number" step="0.01" min="0" value={form.ticket_price} onChange={e => setForm({...form, ticket_price: e.target.value})} />
+            <InputField label="Selling Price" type="number" step="0.01" min="0" value={form.selling_price} onChange={e => setForm({...form, selling_price: e.target.value})} />
+            <InputField label="Commission" type="number" step="0.01" min="0" value={form.commission} onChange={e => setForm({...form, commission: e.target.value})} />
+            <InputField label="Payment Received" type="number" step="0.01" min="0" value={form.payment_received} onChange={e => setForm({...form, payment_received: e.target.value})} />
           </div>
           <div>
             <label className="block text-[12px] font-medium text-[#5f6368] mb-1.5 uppercase tracking-wider">Notes</label>

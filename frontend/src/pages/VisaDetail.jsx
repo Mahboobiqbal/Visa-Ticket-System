@@ -16,14 +16,23 @@ export default function VisaDetail() {
   const [printOpen, setPrintOpen] = useState(false);
 
   useEffect(() => {
-    api.get(`/visas/${id}`).then(res => { setVisa(res.data); setLoading(false); }).catch(() => { toast.error('Visa not found'); navigate('/visas'); });
-  }, [id]);
+    let active = true;
+    api.get(`/visas/${id}`)
+      .then(res => { if (active) setVisa(res.data); })
+      .catch(() => { if (active) { toast.error('Visa not found'); navigate('/visas'); } })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [id, navigate]);
 
   const handleDelete = async () => {
     if (!confirm('Delete this visa permanently?')) return;
-    await api.delete(`/visas/${id}`);
-    toast.success('Visa deleted');
-    navigate('/visas');
+    try {
+      await api.delete(`/visas/${id}`);
+      toast.success('Visa deleted');
+      navigate('/visas');
+    } catch (err) {
+      toast.error('Error deleting visa');
+    }
   };
 
   if (loading) return (

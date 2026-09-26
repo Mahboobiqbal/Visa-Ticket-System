@@ -16,14 +16,23 @@ export default function TicketDetail() {
   const [printOpen, setPrintOpen] = useState(false);
 
   useEffect(() => {
-    api.get(`/tickets/${id}`).then(res => { setTicket(res.data); setLoading(false); }).catch(() => { toast.error('Ticket not found'); navigate('/tickets'); });
-  }, [id]);
+    let active = true;
+    api.get(`/tickets/${id}`)
+      .then(res => { if (active) setTicket(res.data); })
+      .catch(() => { if (active) { toast.error('Ticket not found'); navigate('/tickets'); } })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [id, navigate]);
 
   const handleDelete = async () => {
     if (!confirm('Delete this ticket permanently?')) return;
-    await api.delete(`/tickets/${id}`);
-    toast.success('Ticket deleted');
-    navigate('/tickets');
+    try {
+      await api.delete(`/tickets/${id}`);
+      toast.success('Ticket deleted');
+      navigate('/tickets');
+    } catch (err) {
+      toast.error('Error deleting ticket');
+    }
   };
 
   if (loading) return (

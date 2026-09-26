@@ -16,14 +16,23 @@ export default function CashOutDetail() {
   const [printOpen, setPrintOpen] = useState(false);
 
   useEffect(() => {
-    api.get(`/cashouts/${id}`).then(res => { setCashout(res.data); setLoading(false); }).catch(() => { toast.error('Record not found'); navigate('/cashout'); });
-  }, [id]);
+    let active = true;
+    api.get(`/cashouts/${id}`)
+      .then(res => { if (active) setCashout(res.data); })
+      .catch(() => { if (active) { toast.error('Record not found'); navigate('/cashout'); } })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [id, navigate]);
 
   const handleDelete = async () => {
     if (!confirm('Delete this cash out record?')) return;
-    await api.delete(`/cashouts/${id}`);
-    toast.success('Record deleted');
-    navigate('/cashout');
+    try {
+      await api.delete(`/cashouts/${id}`);
+      toast.success('Record deleted');
+      navigate('/cashout');
+    } catch (err) {
+      toast.error('Error deleting cash out record');
+    }
   };
 
   if (loading) return (

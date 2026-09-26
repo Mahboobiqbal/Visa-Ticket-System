@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api';
 import Modal from '../components/Modal';
 import toast from 'react-hot-toast';
@@ -20,18 +20,23 @@ export default function CashOut() {
   const [form, setForm] = useState(emptyForm);
   const [showFilters, setShowFilters] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const searchTimeout = useRef(null);
 
   const load = () => {
+    setLoading(true);
     const params = {};
     if (filterAgent) params.agent_id = filterAgent;
-    if (search) params.search = search;
-    api.get('/cashouts/', { params }).then(res => setCashouts(res.data));
+    if (debouncedSearch) params.search = debouncedSearch;
+    api.get('/cashouts/', { params }).then(res => setCashouts(res.data)).catch(() => toast.error('Failed to load cash out records')).finally(() => setLoading(false));
   };
 
   const exportCSV = () => {
     const params = {};
     if (filterAgent) params.agent_id = filterAgent;
-    if (search) params.search = search;
+    if (debouncedSearch) params.search = debouncedSearch;
     api.get('/cashouts/export', { params, responseType: 'blob' }).then(res => {
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const a = document.createElement('a');
@@ -43,7 +48,21 @@ export default function CashOut() {
   };
 
   useEffect(() => { api.get('/agents/').then(res => setAgents(res.data)); }, []);
-  useEffect(() => { load(); }, [filterAgent, search]);
+  useEffect(() => {
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    searchTimeout.current = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(searchTimeout.current);
+  }, [search]);
+  useEffect(() => { load(); }, [filterAgent, debouncedSearch]);
+
+  useEffect(() => {
+    if (location.state?.editId) {
+      api.get(`/cashouts/${location.state.editId}`).then(res => {
+        openEdit(res.data);
+      }).catch(() => {});
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const openAdd = () => { setForm(emptyForm); setEditingId(null); setModalOpen(true); };
   const openEdit = (c) => {
@@ -75,9 +94,13 @@ export default function CashOut() {
 
   const handleDelete = async (id) => {
     if (!confirm('Delete?')) return;
-    await api.delete(`/cashouts/${id}`);
-    toast.success('Deleted');
-    load();
+    try {
+      await api.delete(`/cashouts/${id}`);
+      toast.success('Deleted');
+      load();
+    } catch (err) {
+      toast.error('Error deleting cash out record');
+    }
   };
 
   const totalCash = cashouts.filter(c => c.payment_method === 'cash').reduce((s, c) => s + c.amount, 0);
@@ -151,7 +174,9 @@ export default function CashOut() {
               </tr>
             </thead>
             <tbody>
-              {cashouts.length === 0 ? (
+              {loading ? (
+                <tr><td colSpan={7} className="px-5 py-16 text-center"><div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-[#E74C3C]" /></td></tr>
+              ) : cashouts.length === 0 ? (
                 <tr><td colSpan={7} className="px-5 py-16 text-center">
                   <Banknote size={48} className="mx-auto text-[#dadce0] mb-3" />
                   <p className="text-[14px] text-[#5f6368]">No cash out records</p>

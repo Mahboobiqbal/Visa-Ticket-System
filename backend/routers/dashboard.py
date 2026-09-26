@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from database import get_db
 from models import TicketBooking, VisaProcessing, Agent, CashOut
 from auth import get_current_user
@@ -10,7 +10,7 @@ router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
 
 def get_date_filter(period):
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
     if period == "today":
         return now.replace(hour=0, minute=0, second=0, microsecond=0)
     elif period == "week":
@@ -107,7 +107,7 @@ def get_dashboard(
 
     # Monthly revenue (last 6 months)
     monthly_revenue = []
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
     for i in range(5, -1, -1):
         month_date = now - timedelta(days=30 * i)
         month_start = month_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)

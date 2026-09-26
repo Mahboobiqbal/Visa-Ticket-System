@@ -16,23 +16,35 @@ export default function AgentDetail() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
+    let active = true;
+    Promise.allSettled([
       api.get(`/agents/${id}`),
       api.get(`/tickets/`, { params: { agent_id: id } }),
       api.get(`/visas/`, { params: { agent_id: id } }),
     ]).then(([agentRes, ticketsRes, visasRes]) => {
-      setAgent(agentRes.data);
-      setTickets(ticketsRes.data);
-      setVisas(visasRes.data);
+      if (!active) return;
+      if (agentRes.status !== 'fulfilled') {
+        toast.error('Agent not found');
+        navigate('/agents');
+        return;
+      }
+      setAgent(agentRes.value.data);
+      if (ticketsRes.status === 'fulfilled') setTickets(ticketsRes.value.data);
+      if (visasRes.status === 'fulfilled') setVisas(visasRes.value.data);
       setLoading(false);
-    }).catch(() => { toast.error('Agent not found'); navigate('/agents'); });
-  }, [id]);
+    });
+    return () => { active = false; };
+  }, [id, navigate]);
 
   const handleDelete = async () => {
     if (!confirm('Delete this agent and all their records?')) return;
-    await api.delete(`/agents/${id}`);
-    toast.success('Agent deleted');
-    navigate('/agents');
+    try {
+      await api.delete(`/agents/${id}`);
+      toast.success('Agent deleted');
+      navigate('/agents');
+    } catch (err) {
+      toast.error('Error deleting agent');
+    }
   };
 
   if (loading) return (

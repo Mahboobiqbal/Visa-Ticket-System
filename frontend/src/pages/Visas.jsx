@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api';
 import Modal from '../components/Modal';
 import toast from 'react-hot-toast';
@@ -45,18 +45,23 @@ export default function Visas() {
   const [form, setForm] = useState(emptyForm);
   const [showFilters, setShowFilters] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchTimeout = useRef(null);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [loading, setLoading] = useState(true);
 
   const load = () => {
+    setLoading(true);
     const params = {};
     if (filterAgent) params.agent_id = filterAgent;
-    if (search) params.search = search;
-    api.get('/visas/', { params }).then(res => setVisas(res.data));
+    if (debouncedSearch) params.search = debouncedSearch;
+    api.get('/visas/', { params }).then(res => setVisas(res.data)).catch(() => toast.error('Failed to load visas')).finally(() => setLoading(false));
   };
 
   const exportCSV = () => {
     const params = {};
     if (filterAgent) params.agent_id = filterAgent;
-    if (search) params.search = search;
+    if (debouncedSearch) params.search = debouncedSearch;
     api.get('/visas/export', { params, responseType: 'blob' }).then(res => {
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const a = document.createElement('a');
@@ -73,7 +78,25 @@ export default function Visas() {
     api.get('/settings/visa_packages').then(res => setVisaPackages(res.data.value.split(','))).catch(() => {});
   }, []);
 
-  useEffect(() => { load(); }, [filterAgent, search]);
+  useEffect(() => {
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    searchTimeout.current = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(searchTimeout.current);
+  }, [search]);
+
+  useEffect(() => { load(); }, [filterAgent, debouncedSearch]);
+
+  useEffect(() => {
+    return () => clearTimeout(searchTimeout.current);
+  }, []);
+
+  useEffect(() => {
+    if (location.state?.editId) {
+      const editId = location.state.editId;
+      api.get(`/visas/${editId}`).then(res => openEdit(res.data)).catch(() => {});
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const openAdd = () => { setForm(emptyForm); setEditingId(null); setModalOpen(true); };
   const openEdit = (v) => {
@@ -104,9 +127,13 @@ export default function Visas() {
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this visa?')) return;
-    await api.delete(`/visas/${id}`);
-    toast.success('Visa deleted');
-    load();
+    try {
+      await api.delete(`/visas/${id}`);
+      toast.success('Visa deleted');
+      load();
+    } catch (err) {
+      toast.error('Error deleting visa');
+    }
   };
 
   return (
@@ -161,7 +188,9 @@ export default function Visas() {
               </tr>
             </thead>
             <tbody>
-              {visas.length === 0 ? (
+              {loading ? (
+                <tr><td colSpan={9} className="px-5 py-16 text-center"><div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-[#E74C3C]" /></td></tr>
+              ) : visas.length === 0 ? (
                 <tr><td colSpan={9} className="px-5 py-16 text-center">
                   <Stamp size={48} className="mx-auto text-[#dadce0] mb-3" />
                   <p className="text-[14px] text-[#5f6368]">No visa records found</p>

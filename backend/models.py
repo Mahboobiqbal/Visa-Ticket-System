@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, Text, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from database import Base
 
 
@@ -12,7 +12,8 @@ class User(Base):
     password = Column(String)
     full_name = Column(String, default="")
     role = Column(String, default="admin")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
 
 class Agent(Base):
@@ -24,7 +25,8 @@ class Agent(Base):
     email = Column(String, default="")
     commission_rate = Column(Float, default=10.0)
     status = Column(String, default="active")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     tickets = relationship("TicketBooking", back_populates="agent")
     visas = relationship("VisaProcessing", back_populates="agent")
@@ -35,7 +37,7 @@ class TicketBooking(Base):
     __tablename__ = "ticket_bookings"
 
     id = Column(Integer, primary_key=True, index=True)
-    agent_id = Column(Integer, ForeignKey("agents.id"))
+    agent_id = Column(Integer, ForeignKey("agents.id", ondelete="SET NULL"), nullable=True)
     passenger_name = Column(String)
     passport_number = Column(String, default="")
     passport_expiry = Column(String, default="")
@@ -52,7 +54,8 @@ class TicketBooking(Base):
     payment_received = Column(Float, default=0.0)
     payment_status = Column(String, default="pending")
     notes = Column(Text, default="")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     agent = relationship("Agent", back_populates="tickets")
 
@@ -61,7 +64,7 @@ class VisaProcessing(Base):
     __tablename__ = "visa_processings"
 
     id = Column(Integer, primary_key=True, index=True)
-    agent_id = Column(Integer, ForeignKey("agents.id"))
+    agent_id = Column(Integer, ForeignKey("agents.id", ondelete="SET NULL"), nullable=True)
     passenger_name = Column(String)
     passport_number = Column(String, default="")
     phone = Column(String, default="")
@@ -78,7 +81,8 @@ class VisaProcessing(Base):
     total_expenses = Column(Float, default=0.0)
     analysis = Column(Text, default="")
     status = Column(String, default="pending")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     agent = relationship("Agent", back_populates="visas")
 
@@ -87,15 +91,16 @@ class CashOut(Base):
     __tablename__ = "cashouts"
 
     id = Column(Integer, primary_key=True, index=True)
-    agent_id = Column(Integer, ForeignKey("agents.id"), nullable=True)
-    visa_id = Column(Integer, ForeignKey("visa_processings.id"), nullable=True)
-    ticket_id = Column(Integer, ForeignKey("ticket_bookings.id"), nullable=True)
+    agent_id = Column(Integer, ForeignKey("agents.id", ondelete="SET NULL"), nullable=True)
+    visa_id = Column(Integer, ForeignKey("visa_processings.id", ondelete="SET NULL"), nullable=True)
+    ticket_id = Column(Integer, ForeignKey("ticket_bookings.id", ondelete="SET NULL"), nullable=True)
     name = Column(String)
     amount = Column(Float, default=0.0)
     date = Column(String)
     payment_method = Column(String, default="cash")
     comments = Column(Text, default="")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     agent = relationship("Agent", back_populates="cashouts")
 
@@ -106,16 +111,18 @@ class Settings(Base):
     id = Column(Integer, primary_key=True, index=True)
     key = Column(String, unique=True, index=True)
     value = Column(Text, default="")
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
 
 class ActivityLog(Base):
     __tablename__ = "activity_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     username = Column(String, default="")
     action = Column(String)
     entity_type = Column(String)
     entity_id = Column(Integer)
     details = Column(Text, default="")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

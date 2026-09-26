@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
+import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 import { Ticket, Stamp, Users, Banknote, AlertTriangle, TrendingUp, Clock, ArrowRight } from 'lucide-react';
 
 const periods = [
@@ -15,17 +17,40 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [alerts, setAlerts] = useState({ passport: { count: 0, alerts: [] }, payments: { count: 0, total_due: 0, alerts: [] } });
   const [period, setPeriod] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const load = () => {
-    api.get('/dashboard/', { params: { period } }).then(res => setStats(res.data));
-    api.get('/alerts/passport-expiry').then(res => setAlerts(prev => ({ ...prev, passport: res.data }))).catch(() => {});
-    api.get('/alerts/pending-payments').then(res => setAlerts(prev => ({ ...prev, payments: res.data }))).catch(() => {});
+  const load = async () => {
+    setLoading(true);
+    setError('');
+    const [dashboardRes, passportRes, paymentsRes] = await Promise.allSettled([
+      api.get('/dashboard/', { params: { period } }),
+      api.get('/alerts/passport-expiry'),
+      api.get('/alerts/pending-payments'),
+    ]);
+
+    if (dashboardRes.status === 'fulfilled') {
+      setStats(dashboardRes.value.data);
+    } else {
+      setError('Failed to load dashboard');
+      toast.error('Failed to load dashboard');
+    }
+
+    if (passportRes.status === 'fulfilled') {
+      setAlerts(prev => ({ ...prev, passport: passportRes.value.data }));
+    }
+    if (paymentsRes.status === 'fulfilled') {
+      setAlerts(prev => ({ ...prev, payments: paymentsRes.value.data }));
+    }
+    setLoading(false);
   };
 
   useEffect(() => { load(); }, [period]);
 
-  if (!stats) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E74C3C]"></div></div>;
+  if (loading && !stats) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E74C3C]"></div></div>;
+  if (error && !stats) return <div className="rounded-xl border border-[#f5b7b1] bg-[#fce8e6] px-4 py-3 text-[13px] text-[#d93025]">{error}</div>;
 
   const maxRevenue = Math.max(...stats.monthly_revenue.map(m => m.revenue), 1);
 
@@ -35,7 +60,7 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-[22px] font-normal text-[#202124]">Dashboard</h1>
-          <p className="text-[13px] text-[#5f6368] mt-0.5">Welcome back, {localStorage.getItem('token') ? 'Admin' : 'User'}</p>
+          <p className="text-[13px] text-[#5f6368] mt-0.5">Welcome back, {user?.full_name || user?.username || 'User'}</p>
         </div>
         <div className="flex gap-1 bg-white rounded-full border border-[#dadce0] p-1">
           {periods.map(p => (

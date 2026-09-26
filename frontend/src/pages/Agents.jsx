@@ -1,21 +1,54 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api';
 import Modal from '../components/Modal';
 import toast from 'react-hot-toast';
-import { Plus, Edit2, Trash2, Users, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, CheckCircle, XCircle, Search, Download, Filter, X } from 'lucide-react';
 
 const emptyForm = { name: '', phone: '', email: '', commission_rate: 10, status: 'active' };
 
 export default function Agents() {
   const [agents, setAgents] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchTimeout = useRef(null);
 
-  const load = () => api.get('/agents/').then(res => setAgents(res.data));
+  useEffect(() => {
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    searchTimeout.current = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(searchTimeout.current);
+  }, [search]);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/agents/');
+      setAgents(res.data);
+    } catch (err) {
+      toast.error('Failed to load agents');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    if (location.state?.editId) {
+      api.get(`/agents/${location.state.editId}`).then(res => {
+        openEdit(res.data);
+      }).catch(() => {});
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const openAdd = () => { setForm(emptyForm); setEditingId(null); setModalOpen(true); };
   const openEdit = (a) => {
@@ -37,10 +70,35 @@ export default function Agents() {
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this agent and all their records?')) return;
-    await api.delete(`/agents/${id}`);
-    toast.success('Agent deleted');
-    load();
+    try {
+      await api.delete(`/agents/${id}`);
+      toast.success('Agent deleted');
+      load();
+    } catch (err) {
+      toast.error('Error deleting agent');
+    }
   };
+
+  const exportCSV = () => {
+    const rows = [
+      ['Name', 'Phone', 'Email', 'Commission Rate', 'Status'],
+      ...filteredAgents.map(a => [a.name, a.phone || '', a.email || '', a.commission_rate, a.status]),
+    ];
+    const csv = rows.map(row => row.map(value => `"${String(value).replaceAll('"', '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'agents_export.csv';
+    link.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const filteredAgents = agents.filter((agent) => {
+    const matchesSearch = !debouncedSearch || [agent.name, agent.phone, agent.email].join(' ').toLowerCase().includes(debouncedSearch.toLowerCase());
+    const matchesStatus = !statusFilter || agent.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -49,20 +107,52 @@ export default function Agents() {
           <h1 className="text-[22px] font-normal text-[#202124]">Agents</h1>
           <p className="text-[13px] text-[#5f6368] mt-0.5">{agents.length} agent{agents.length !== 1 ? 's' : ''}</p>
         </div>
-        <button onClick={openAdd} className="flex items-center gap-2 bg-[#E74C3C] text-white px-5 py-2.5 rounded-full text-[13px] font-medium hover:bg-[#C0392B] transition-all">
-          <Plus size={18} /> Add Agent
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={exportCSV} className="flex items-center gap-2 bg-white border border-[#dadce0] text-[#5f6368] px-4 py-2.5 rounded-full text-[13px] font-medium hover:bg-[#f1f3f4] transition-all">
+            <Download size={16} /> Export CSV
+          </button>
+          <button onClick={openAdd} className="flex items-center gap-2 bg-[#E74C3C] text-white px-5 py-2.5 rounded-full text-[13px] font-medium hover:bg-[#C0392B] transition-all">
+            <Plus size={18} /> Add Agent
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-[#e0e0e0] mb-4 overflow-hidden">
+        <div className="flex items-center gap-3 px-4 py-3">
+          <div className="flex-1 flex items-center gap-2 bg-[#f1f3f4] rounded-full px-4 py-2">
+            <Search size={18} className="text-[#5f6368]" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search agents..." className="w-full bg-transparent outline-none text-[13px] text-[#202124] placeholder:text-[#5f6368]" />
+            {search && <button onClick={() => setSearch('')} className="p-0.5 rounded-full hover:bg-[#e8eaed]"><X size={16} className="text-[#5f6368]" /></button>}
+          </div>
+          <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] transition-colors ${showFilters ? 'bg-[#f0f0f0] text-[#2E2E2E]' : 'text-[#5f6368] hover:bg-[#f1f3f4]'}`}>
+            <Filter size={16} /><span>Filter</span>
+          </button>
+        </div>
+        {showFilters && (
+          <div className="px-4 pb-3 flex items-center gap-3 border-t border-[#f0f0f0] pt-3">
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2 border border-[#dadce0] rounded-lg text-[13px] focus:ring-0 outline-none bg-white">
+              <option value="">All Statuses</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+            {statusFilter && <button onClick={() => setStatusFilter('')} className="flex items-center gap-1 text-[13px] text-[#E74C3C] hover:underline"><X size={14} /> Clear</button>}
+          </div>
+        )}
       </div>
 
       {/* Agent Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {agents.length === 0 ? (
+        {loading ? (
+          <div className="col-span-full bg-white rounded-xl border border-[#e0e0e0] px-5 py-16 text-center">
+            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-[#E74C3C]" />
+          </div>
+        ) : filteredAgents.length === 0 ? (
           <div className="col-span-full bg-white rounded-xl border border-[#e0e0e0] px-5 py-16 text-center">
             <Users size={48} className="mx-auto text-[#dadce0] mb-3" />
-            <p className="text-[14px] text-[#5f6368]">No agents yet</p>
-            <p className="text-[12px] text-[#9aa0a6] mt-1">Add your first agent to get started</p>
+            <p className="text-[14px] text-[#5f6368]">No agents found</p>
+            <p className="text-[12px] text-[#9aa0a6] mt-1">Try a different search or add your first agent</p>
           </div>
-        ) : agents.map((a) => (
+        ) : filteredAgents.map((a) => (
           <div key={a.id} className="bg-white rounded-xl border border-[#e0e0e0] overflow-hidden hover:shadow-[0_1px_3px_0_rgba(60,64,67,0.3),0_4px_8px_3px_rgba(60,64,67,0.15)] transition-all cursor-pointer group" onClick={() => navigate(`/agents/${a.id}`)}>
             {/* Color bar */}
             <div className={`h-1.5 ${a.status === 'active' ? 'bg-gradient-to-r from-[#E74C3C] to-[#C0392B]' : 'bg-[#dadce0]'}`}></div>
