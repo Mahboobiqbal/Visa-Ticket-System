@@ -91,8 +91,8 @@ export default function Dashboard() {
                 <AlertTriangle size={18} className="text-[#d93025]" />
                 <span className="text-[13px] font-medium text-[#d93025]">Pending Payments</span>
               </div>
-              <p className="text-[12px] text-[#5f6368]">{alerts.payments.count} record(s) — SAR {alerts.payments.total_due.toLocaleString()} due</p>
-              <button onClick={() => navigate('/cashout')} className="text-[12px] text-[#E74C3C] mt-1 hover:underline">View Details →</button>
+              <p className="text-[12px] text-[#5f6368]">{alerts.payments.count} record(s) — PKR {alerts.payments.total_due.toLocaleString()} due</p>
+              <button onClick={() => navigate('/payments')} className="text-[12px] text-[#E74C3C] mt-1 hover:underline">View Details →</button>
             </div>
           )}
         </div>
@@ -104,7 +104,7 @@ export default function Dashboard() {
           { icon: Ticket, label: 'Total Bookings', value: stats.total_tickets, color: '#E74C3C', link: '/tickets' },
           { icon: Stamp, label: 'Total Visas', value: stats.total_visas, color: '#e37400', link: '/visas' },
           { icon: Users, label: 'Active Agents', value: stats.total_agents, color: '#1e8e3e', link: '/agents' },
-          { icon: Banknote, label: 'Total Revenue', value: `SAR ${stats.total_revenue.toLocaleString()}`, color: '#1a73e8', link: '/cashout' },
+          { icon: Banknote, label: 'Total Revenue', value: `PKR ${stats.total_revenue.toLocaleString()}`, color: '#1a73e8', link: '/payments' },
         ].map(({ icon: Icon, label, value, color, link }) => (
           <div key={label} onClick={() => navigate(link)} className="bg-white rounded-xl border border-[#e0e0e0] p-5 cursor-pointer hover:shadow-[0_1px_3px_0_rgba(60,64,67,0.3),0_4px_8px_3px_rgba(60,64,67,0.15)] transition-all">
             <div className="flex items-center justify-between">
@@ -124,15 +124,15 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl border border-[#e0e0e0] p-5">
           <p className="text-[12px] text-[#5f6368] uppercase tracking-wide font-medium">Total Commission</p>
-          <p className="text-[20px] font-normal text-[#1e8e3e] mt-1">SAR {stats.total_commission.toLocaleString()}</p>
+          <p className="text-[20px] font-normal text-[#1e8e3e] mt-1">PKR {stats.total_commission.toLocaleString()}</p>
         </div>
         <div className="bg-white rounded-xl border border-[#e0e0e0] p-5">
           <p className="text-[12px] text-[#5f6368] uppercase tracking-wide font-medium">Total Expenses</p>
-          <p className="text-[20px] font-normal text-[#d93025] mt-1">SAR {stats.total_expenses.toLocaleString()}</p>
+          <p className="text-[20px] font-normal text-[#d93025] mt-1">PKR {stats.total_expenses.toLocaleString()}</p>
         </div>
         <div className="bg-white rounded-xl border border-[#e0e0e0] p-5">
           <p className="text-[12px] text-[#5f6368] uppercase tracking-wide font-medium">Pending Payments</p>
-          <p className="text-[20px] font-normal text-[#e37400] mt-1">SAR {stats.pending_payments.toLocaleString()}</p>
+          <p className="text-[20px] font-normal text-[#e37400] mt-1">PKR {stats.pending_payments.toLocaleString()}</p>
         </div>
       </div>
 
@@ -146,7 +146,7 @@ export default function Dashboard() {
               const height = maxRevenue > 0 ? (m.revenue / maxRevenue) * 100 : 0;
               return (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <span className="text-[10px] text-[#5f6368]">{m.revenue > 0 ? `SAR ${(m.revenue / 1000).toFixed(0)}k` : ''}</span>
+                  <span className="text-[10px] text-[#5f6368]">{m.revenue > 0 ? `PKR ${(m.revenue / 1000).toFixed(0)}k` : ''}</span>
                   <div className="w-full rounded-t-md bg-[#E74C3C] transition-all duration-500" style={{ height: `${Math.max(height, 2)}%` }}></div>
                   <span className="text-[10px] text-[#5f6368]">{m.month.split(' ')[0]}</span>
                 </div>
@@ -167,7 +167,7 @@ export default function Dashboard() {
                   <div className="w-8 h-8 rounded-full bg-[#E74C3C] flex items-center justify-center text-white text-[12px] font-medium">{i + 1}</div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[13px] font-medium text-[#202124] truncate">{a.name}</p>
-                    <p className="text-[11px] text-[#5f6368]">SAR {a.revenue.toLocaleString()}</p>
+                    <p className="text-[11px] text-[#5f6368]">PKR {a.revenue.toLocaleString()}</p>
                   </div>
                   <ArrowRight size={14} className="text-[#5f6368]" />
                 </div>
@@ -192,10 +192,10 @@ export default function Dashboard() {
               <div key={t.id} onClick={() => navigate(`/tickets/${t.id}`)} className="flex items-center justify-between px-5 py-3 cursor-pointer hover:bg-[#f8f8f8] transition-colors">
                 <div className="min-w-0">
                   <p className="text-[13px] font-medium text-[#202124] truncate">{t.passenger_name}</p>
-                  <p className="text-[11px] text-[#5f6368]">{t.flight_from} → {t.flight_to} · {t.agent_name}</p>
+                  <p className="text-[11px] text-[#5f6368]">{t.sector} · {t.agent_name}</p>
                 </div>
                 <div className="text-right flex-shrink-0 ml-3">
-                  <p className="text-[13px] text-[#202124]">SAR {t.selling_price.toLocaleString()}</p>
+                  <p className="text-[13px] text-[#202124]">PKR {t.total_payment.toLocaleString()}</p>
                   <span className={`text-[11px] ${t.payment_status === 'paid' ? 'text-[#1e8e3e]' : 'text-[#e37400]'}`}>{t.payment_status}</span>
                 </div>
               </div>
@@ -216,10 +216,10 @@ export default function Dashboard() {
               <div key={v.id} onClick={() => navigate(`/visas/${v.id}`)} className="flex items-center justify-between px-5 py-3 cursor-pointer hover:bg-[#f8f8f8] transition-colors">
                 <div className="min-w-0">
                   <p className="text-[13px] font-medium text-[#202124] truncate">{v.passenger_name}</p>
-                  <p className="text-[11px] text-[#5f6368]">{v.visa_type} · {v.package} · {v.agent_name}</p>
+                  <p className="text-[11px] text-[#5f6368]">{v.visa_type} · {v.agent_name}</p>
                 </div>
                 <div className="text-right flex-shrink-0 ml-3">
-                  <p className="text-[13px] text-[#202124]">SAR {v.total_charges.toLocaleString()}</p>
+                  <p className="text-[13px] text-[#202124]">PKR {v.total_charges.toLocaleString()}</p>
                   <span className={`text-[11px] ${v.status === 'approved' ? 'text-[#1e8e3e]' : v.status === 'rejected' ? 'text-[#d93025]' : 'text-[#e37400]'}`}>{v.status}</span>
                 </div>
               </div>

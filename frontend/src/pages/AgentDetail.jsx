@@ -54,8 +54,8 @@ export default function AgentDetail() {
   );
   if (!agent) return null;
 
-  const totalRevenue = tickets.reduce((sum, t) => sum + t.selling_price, 0) + visas.reduce((sum, v) => sum + v.total_charges, 0);
-  const totalCommission = tickets.reduce((sum, t) => sum + t.commission, 0) + visas.reduce((sum, v) => sum + v.total_commission, 0);
+  const totalRevenue = tickets.reduce((sum, t) => sum + t.total_payment, 0) + visas.reduce((sum, v) => sum + v.total_charges, 0);
+  const totalCommission = tickets.reduce((sum, t) => sum + t.agent_commission, 0) + visas.reduce((sum, v) => sum + v.commission, 0);
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -135,8 +135,8 @@ export default function AgentDetail() {
         {[
           { label: 'Tickets', value: tickets.length, icon: Ticket, bg: '#f0f0f0', color: '#E74C3C' },
           { label: 'Visas', value: visas.length, icon: Stamp, bg: '#e6f4ea', color: '#1e8e3e' },
-          { label: 'Revenue', value: `SAR ${totalRevenue.toLocaleString()}`, icon: Banknote, bg: '#fef7e0', color: '#e37400' },
-          { label: 'Commission', value: `SAR ${totalCommission.toLocaleString()}`, icon: Percent, bg: '#fce8e6', color: '#d93025' },
+          { label: 'Revenue', value: `PKR ${totalRevenue.toLocaleString()}`, icon: Banknote, bg: '#fef7e0', color: '#e37400' },
+          { label: 'Commission', value: `PKR ${totalCommission.toLocaleString()}`, icon: Percent, bg: '#fce8e6', color: '#d93025' },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-xl border border-[#e0e0e0] p-4">
             <div className="flex items-center gap-3">
@@ -174,8 +174,8 @@ export default function AgentDetail() {
               ) : tickets.slice(0, 5).map(t => (
                 <tr key={t.id} className="border-b border-[#f0f0f0] last:border-0 gmail-row cursor-pointer" onClick={() => navigate(`/tickets/${t.id}`)}>
                   <td className="px-5 py-3 text-[13px] text-[#202124] font-medium">{t.passenger_name}</td>
-                  <td className="px-5 py-3 text-[13px] text-[#5f6368]">{t.flight_from} → {t.flight_to}</td>
-                  <td className="px-5 py-3 text-[13px] text-[#202124]">SAR {t.selling_price.toLocaleString()}</td>
+                  <td className="px-5 py-3 text-[13px] text-[#5f6368]">{t.sector}</td>
+                  <td className="px-5 py-3 text-[13px] text-[#202124]">PKR {t.total_payment.toLocaleString()}</td>
                   <td className="px-5 py-3">
                     <span className={`gmail-badge ${t.payment_status === 'paid' ? 'bg-[#e6f4ea] text-[#1e8e3e]' : 'bg-[#fef7e0] text-[#e37400]'}`}>{t.payment_status}</span>
                   </td>
@@ -209,7 +209,7 @@ export default function AgentDetail() {
                 <tr key={v.id} className="border-b border-[#f0f0f0] last:border-0 gmail-row cursor-pointer" onClick={() => navigate(`/visas/${v.id}`)}>
                   <td className="px-5 py-3 text-[13px] text-[#202124] font-medium">{v.passenger_name}</td>
                   <td className="px-5 py-3 text-[13px] text-[#5f6368] capitalize">{v.visa_type}</td>
-                  <td className="px-5 py-3 text-[13px] text-[#202124]">SAR {v.total_charges.toLocaleString()}</td>
+                  <td className="px-5 py-3 text-[13px] text-[#202124]">PKR {v.total_charges.toLocaleString()}</td>
                   <td className="px-5 py-3">
                     <span className={`gmail-badge ${v.status === 'approved' ? 'bg-[#e6f4ea] text-[#1e8e3e]' : v.status === 'rejected' ? 'bg-[#fce8e6] text-[#d93025]' : 'bg-[#fef7e0] text-[#e37400]'}`}>{v.status}</span>
                   </td>

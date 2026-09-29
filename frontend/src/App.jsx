@@ -7,8 +7,7 @@ import Tickets from './pages/Tickets';
 import TicketDetail from './pages/TicketDetail';
 import Visas from './pages/Visas';
 import VisaDetail from './pages/VisaDetail';
-import CashOut from './pages/CashOut';
-import CashOutDetail from './pages/CashOutDetail';
+import Payments from './pages/Payments';
 import Agents from './pages/Agents';
 import AgentDetail from './pages/AgentDetail';
 import Settings from './pages/Settings';
@@ -32,8 +31,7 @@ function AppRoutes() {
         <Route path="tickets/:id" element={<TicketDetail />} />
         <Route path="visas" element={<Visas />} />
         <Route path="visas/:id" element={<VisaDetail />} />
-        <Route path="cashout" element={<CashOut />} />
-        <Route path="cashout/:id" element={<CashOutDetail />} />
+        <Route path="payments" element={<Payments />} />
         <Route path="agents" element={<Agents />} />
         <Route path="agents/:id" element={<AgentDetail />} />
         <Route path="settings" element={<Settings />} />

@@ -19,7 +19,7 @@ const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/tickets', icon: Ticket, label: 'Tickets' },
   { to: '/visas', icon: Stamp, label: 'Visa Processing' },
-  { to: '/cashout', icon: Banknote, label: 'Cash Out' },
+  { to: '/payments', icon: Banknote, label: 'Payments' },
   { to: '/agents', icon: Users, label: 'Agents' },
   { to: '/activity', icon: Clock, label: 'Activity' },
 ];

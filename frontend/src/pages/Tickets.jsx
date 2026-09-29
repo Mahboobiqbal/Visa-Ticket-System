@@ -6,29 +6,48 @@ import toast from 'react-hot-toast';
 import { Plus, Edit2, Trash2, Search, Filter, X, Ticket, Download } from 'lucide-react';
 
 const emptyForm = {
-  agent_id: '', passenger_name: '', passport_number: '', passport_expiry: '',
-  phone: '', airline: '', flight_from: '', flight_to: '', booking_ref: '',
-  departure_date: '', return_date: '', ticket_price: '', selling_price: '',
-  commission: '', payment_received: '', payment_status: 'pending', notes: '',
+  agent_id: '', pnr_number: '',
+  passenger_name: '', contact_number: '', dob: '', passport_number: '', passport_expiry: '',
+  sector: '', airline: '',
+  trip_type: 'one_way', departure_date: '', return_date: '',
+  total_payment: '', received_payment: '', payment_method: 'cash', payment_remarks: '',
+  purchase_rate: '',
 };
 
-function InputField({ label, type = "text", ...props }) {
+function Field({ label, children, required }) {
   return (
     <div>
-      <label className="block text-[12px] font-medium text-[#5f6368] mb-1.5 uppercase tracking-wider">{label}</label>
-      <input type={type} {...props} className="w-full px-3 py-2.5 border border-[#dadce0] rounded-lg text-[13px] text-[#202124] focus:border-[#E74C3C] focus:ring-0 outline-none transition-colors" />
+      <label className="block text-[12px] font-medium text-[#5f6368] mb-1.5 uppercase tracking-wider">
+        {label} {required && <span className="text-[#d93025]">*</span>}
+      </label>
+      {children}
     </div>
   );
 }
 
-function SelectField({ label, children, ...props }) {
+function Input({ label, required, readOnly, className = '', ...props }) {
   return (
-    <div>
-      <label className="block text-[12px] font-medium text-[#5f6368] mb-1.5 uppercase tracking-wider">{label}</label>
-      <select {...props} className="w-full px-3 py-2.5 border border-[#dadce0] rounded-lg text-[13px] text-[#202124] focus:border-[#E74C3C] focus:ring-0 outline-none transition-colors bg-white">
+    <Field label={label} required={required}>
+      <input
+        {...props}
+        readOnly={readOnly}
+        className={`w-full px-3 py-2.5 border border-[#dadce0] rounded-lg text-[13px] text-[#202124] focus:border-[#E74C3C] focus:ring-0 outline-none transition-colors ${readOnly ? 'bg-[#f8f9fa] text-[#5f6368]' : 'bg-white'} ${className}`}
+      />
+    </Field>
+  );
+}
+
+function Select({ label, required, readOnly, children, ...props }) {
+  return (
+    <Field label={label} required={required}>
+      <select
+        {...props}
+        disabled={readOnly}
+        className={`w-full px-3 py-2.5 border border-[#dadce0] rounded-lg text-[13px] text-[#202124] focus:border-[#E74C3C] focus:ring-0 outline-none transition-colors bg-white ${readOnly ? 'bg-[#f8f9fa] text-[#5f6368]' : ''}`}
+      >
         {children}
       </select>
-    </div>
+    </Field>
   );
 }
 
@@ -96,17 +115,21 @@ export default function Tickets() {
     }
   }, [location.state]);
 
+  const getSelectedAgent = () => agents.find(a => a.id === Number(form.agent_id));
+
   const openAdd = () => { setForm(emptyForm); setEditingId(null); setModalOpen(true); };
   const openEdit = (t) => {
     setForm({
-      agent_id: t.agent_id, passenger_name: t.passenger_name,
-      passport_number: t.passport_number, passport_expiry: t.passport_expiry,
-      phone: t.phone, airline: t.airline, flight_from: t.flight_from,
-      flight_to: t.flight_to, booking_ref: t.booking_ref,
-      departure_date: t.departure_date, return_date: t.return_date,
-      ticket_price: t.ticket_price, selling_price: t.selling_price,
-      commission: t.commission, payment_received: t.payment_received,
-      payment_status: t.payment_status, notes: t.notes,
+      agent_id: t.agent_id || '', pnr_number: t.pnr_number || '',
+      passenger_name: t.passenger_name || '', contact_number: t.contact_number || '',
+      dob: t.dob || '', passport_number: t.passport_number || '',
+      passport_expiry: t.passport_expiry || '',
+      sector: t.sector || '', airline: t.airline || '',
+      trip_type: t.trip_type || 'one_way', departure_date: t.departure_date || '',
+      return_date: t.return_date || '',
+      total_payment: t.total_payment || '', received_payment: t.received_payment || '',
+      payment_method: t.payment_method || 'cash', payment_remarks: t.payment_remarks || '',
+      purchase_rate: t.purchase_rate || '',
     });
     setEditingId(t.id);
     setModalOpen(true);
@@ -114,7 +137,25 @@ export default function Tickets() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const data = { ...form, agent_id: Number(form.agent_id), ticket_price: Number(form.ticket_price) || 0, selling_price: Number(form.selling_price) || 0, commission: Number(form.commission) || 0, payment_received: Number(form.payment_received) || 0 };
+    const data = {
+      agent_id: Number(form.agent_id),
+      pnr_number: form.pnr_number,
+      passenger_name: form.passenger_name,
+      contact_number: form.contact_number,
+      dob: form.dob,
+      passport_number: form.passport_number,
+      passport_expiry: form.passport_expiry,
+      sector: form.sector,
+      airline: form.airline,
+      trip_type: form.trip_type,
+      departure_date: form.departure_date,
+      return_date: form.trip_type === 'return' ? form.return_date : '',
+      total_payment: Number(form.total_payment) || 0,
+      received_payment: Number(form.received_payment) || 0,
+      payment_method: form.payment_method,
+      payment_remarks: form.payment_remarks,
+      purchase_rate: Number(form.purchase_rate) || 0,
+    };
     try {
       if (editingId) { await api.put(`/tickets/${editingId}`, data); toast.success('Ticket updated'); }
       else { await api.post('/tickets/', data); toast.success('Ticket created'); }
@@ -132,15 +173,18 @@ export default function Tickets() {
     } catch (err) { toast.error('Error deleting ticket'); }
   };
 
-  useEffect(() => {
-    if (location.state?.editId) {
-      const editId = location.state.editId;
-      api.get(`/tickets/${editId}`).then(res => {
-        openEdit(res.data);
-      }).catch(() => {});
-      window.history.replaceState({}, document.title);
-    }
-  }, [location.state]);
+  const calcPreview = () => {
+    const total = Number(form.total_payment) || 0;
+    const received = Number(form.received_payment) || 0;
+    const purchase = Number(form.purchase_rate) || 0;
+    const agent = getSelectedAgent();
+    const pct = agent ? (agent.commission_rate || 0) : 0;
+    const dues = total - received;
+    const profit = total - purchase;
+    const agentComm = profit * pct / 100;
+    return { dues, profit, agentComm, pct };
+  };
+  const preview = calcPreview();
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -163,22 +207,12 @@ export default function Tickets() {
         <div className="flex items-center gap-3 px-4 py-3">
           <div className="flex-1 flex items-center gap-2 bg-[#f1f3f4] rounded-full px-4 py-2">
             <Search size={18} className="text-[#5f6368]" />
-            <input
-              type="text"
-              placeholder="Search bookings..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-transparent outline-none text-[13px] text-[#202124] placeholder:text-[#5f6368]"
-            />
-            {search && (
-              <button onClick={() => setSearch('')} className="p-0.5 rounded-full hover:bg-[#e8eaed]">
-                <X size={16} className="text-[#5f6368]" />
-              </button>
-            )}
+            <input type="text" placeholder="Search bookings..." value={search} onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-transparent outline-none text-[13px] text-[#202124] placeholder:text-[#5f6368]" />
+            {search && <button onClick={() => setSearch('')} className="p-0.5 rounded-full hover:bg-[#e8eaed]"><X size={16} className="text-[#5f6368]" /></button>}
           </div>
           <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] transition-colors ${showFilters ? 'bg-[#f0f0f0] text-[#2E2E2E]' : 'text-[#5f6368] hover:bg-[#f1f3f4]'}`}>
-            <Filter size={16} />
-            <span>Filter</span>
+            <Filter size={16} /><span>Filter</span>
           </button>
         </div>
         {showFilters && (
@@ -187,107 +221,181 @@ export default function Tickets() {
               <option value="">All Agents</option>
               {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
-            {filterAgent && (
-              <button onClick={() => setFilterAgent('')} className="flex items-center gap-1 text-[13px] text-[#E74C3C] hover:underline">
-                <X size={14} /> Clear filter
-              </button>
-            )}
+            {filterAgent && <button onClick={() => setFilterAgent('')} className="flex items-center gap-1 text-[13px] text-[#E74C3C] hover:underline"><X size={14} /> Clear</button>}
           </div>
         )}
       </div>
 
       <div className="bg-white rounded-xl border border-[#e0e0e0] overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center h-48">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E74C3C]"></div>
-          </div>
+          <div className="flex items-center justify-center h-48"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E74C3C]"></div></div>
         ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[#e0e0e0]">
-                {['Agent', 'Passenger', 'Route', 'Airline', 'Departure', 'Price', 'Commission', 'Payment', 'Actions'].map(h => (
-                  <th key={h} className="text-left px-5 py-2.5 text-[11px] font-medium text-[#5f6368] uppercase tracking-wider">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {tickets.length === 0 ? (
-                <tr><td colSpan={9} className="px-5 py-16 text-center">
-                  <Ticket size={48} className="mx-auto text-[#dadce0] mb-3" />
-                  <p className="text-[14px] text-[#5f6368]">No bookings found</p>
-                  <p className="text-[12px] text-[#9aa0a6] mt-1">Create your first booking to get started</p>
-                </td></tr>
-              ) : tickets.map((t) => (
-                <tr key={t.id} className="border-b border-[#f0f0f0] last:border-0 gmail-row cursor-pointer" onClick={() => navigate(`/tickets/${t.id}`)}>
-                  <td className="px-5 py-3 text-[13px] text-[#202124]">{t.agent_name}</td>
-                  <td className="px-5 py-3 text-[13px] font-medium text-[#202124]">{t.passenger_name}</td>
-                  <td className="px-5 py-3 text-[13px] text-[#5f6368]">{t.flight_from} → {t.flight_to}</td>
-                  <td className="px-5 py-3 text-[13px] text-[#5f6368]">{t.airline}</td>
-                  <td className="px-5 py-3 text-[13px] text-[#5f6368]">{t.departure_date}</td>
-                  <td className="px-5 py-3 text-[13px] text-[#202124]">SAR {t.selling_price.toLocaleString()}</td>
-                  <td className="px-5 py-3 text-[13px] text-[#1e8e3e] font-medium">SAR {t.commission.toLocaleString()}</td>
-                  <td className="px-5 py-3">
-                    <span className={`gmail-badge ${
-                      t.payment_status === 'paid' ? 'bg-[#e6f4ea] text-[#1e8e3e]' : 'bg-[#fef7e0] text-[#e37400]'
-                    }`}>{t.payment_status}</span>
-                  </td>
-                  <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex gap-1">
-                      <button onClick={() => openEdit(t)} aria-label="Edit ticket" className="p-1.5 rounded-full hover:bg-[#f1f3f4]"><Edit2 size={16} className="text-[#5f6368]" /></button>
-                      <button onClick={() => handleDelete(t.id)} aria-label="Delete ticket" className="p-1.5 rounded-full hover:bg-[#fce8e6]"><Trash2 size={16} className="text-[#d93025]" /></button>
-                    </div>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[#e0e0e0]">
+                  {['Agent', 'Passenger', 'PNR', 'Sector', 'Airline', 'Trip', 'Departure', 'Total', 'Dues', 'Payment', 'Actions'].map(h => (
+                    <th key={h} className="text-left px-4 py-2.5 text-[11px] font-medium text-[#5f6368] uppercase tracking-wider">{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {tickets.length === 0 ? (
+                  <tr><td colSpan={11} className="px-5 py-16 text-center">
+                    <Ticket size={48} className="mx-auto text-[#dadce0] mb-3" />
+                    <p className="text-[14px] text-[#5f6368]">No bookings found</p>
+                  </td></tr>
+                ) : tickets.map((t) => (
+                  <tr key={t.id} className="border-b border-[#f0f0f0] last:border-0 gmail-row cursor-pointer" onClick={() => navigate(`/tickets/${t.id}`)}>
+                    <td className="px-4 py-3 text-[13px] text-[#202124]">{t.agent_name}</td>
+                    <td className="px-4 py-3 text-[13px] font-medium text-[#202124]">{t.passenger_name}</td>
+                    <td className="px-4 py-3 text-[13px] text-[#5f6368]">{t.pnr_number || '—'}</td>
+                    <td className="px-4 py-3 text-[13px] text-[#5f6368]">{t.sector}</td>
+                    <td className="px-4 py-3 text-[13px] text-[#5f6368]">{t.airline}</td>
+                    <td className="px-4 py-3 text-[13px] text-[#5f6368]">{t.trip_type === 'return' ? 'Return' : 'One Way'}</td>
+                    <td className="px-4 py-3 text-[13px] text-[#5f6368]">{t.departure_date}</td>
+                    <td className="px-4 py-3 text-[13px] text-[#202124]">PKR {t.total_payment.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-[13px] text-[#d93025] font-medium">{t.dues > 0 ? `PKR ${t.dues.toLocaleString()}` : '—'}</td>
+                    <td className="px-4 py-3">
+                      <span className={`gmail-badge ${t.payment_status === 'paid' ? 'bg-[#e6f4ea] text-[#1e8e3e]' : t.payment_status === 'partial' ? 'bg-[#fef7e0] text-[#e37400]' : 'bg-[#fce8e6] text-[#d93025]'}`}>{t.payment_status}</span>
+                    </td>
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex gap-1">
+                        <button onClick={() => openEdit(t)} className="p-1.5 rounded-full hover:bg-[#f1f3f4]"><Edit2 size={16} className="text-[#5f6368]" /></button>
+                        <button onClick={() => handleDelete(t.id)} className="p-1.5 rounded-full hover:bg-[#fce8e6]"><Trash2 size={16} className="text-[#d93025]" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editingId ? 'Edit Booking' : 'New Booking'} wide>
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <SelectField label="Agent *" value={form.agent_id} onChange={e => setForm({...form, agent_id: e.target.value})} required>
+
+          {/* 1. Agent + Commission % */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Select label="Agent" required value={form.agent_id} onChange={e => setForm({...form, agent_id: e.target.value})}>
               <option value="">Select Agent</option>
               {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-            </SelectField>
-            <InputField label="Passenger Name *" value={form.passenger_name} onChange={e => setForm({...form, passenger_name: e.target.value})} required />
-            <InputField label="Phone" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
+            </Select>
+            <Input label="Agent Commission %" readOnly value={getSelectedAgent()?.commission_rate ? `${getSelectedAgent().commission_rate}%` : '—'} />
+          </div>
+
+          {/* 2. PNR */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input label="PNR Number" value={form.pnr_number} onChange={e => setForm({...form, pnr_number: e.target.value})} />
+          </div>
+
+          {/* 3. Passenger Info */}
+          <div className="border-t border-[#e0e0e0] pt-4">
+            <p className="text-[12px] font-medium text-[#E74C3C] uppercase tracking-wider mb-3">Passenger Information</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <InputField label="Passport Number" value={form.passport_number} onChange={e => setForm({...form, passport_number: e.target.value})} />
-            <InputField label="Passport Expiry" type="date" value={form.passport_expiry} onChange={e => setForm({...form, passport_expiry: e.target.value})} />
-            <InputField label="Booking Ref" value={form.booking_ref} onChange={e => setForm({...form, booking_ref: e.target.value})} />
+            <Input label="Passenger Name" required value={form.passenger_name} onChange={e => setForm({...form, passenger_name: e.target.value})} />
+            <Input label="Contact Number" value={form.contact_number} onChange={e => setForm({...form, contact_number: e.target.value})} />
+            <Input label="Date of Birth" type="date" value={form.dob} onChange={e => setForm({...form, dob: e.target.value})} />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <SelectField label="Airline" value={form.airline} onChange={e => setForm({...form, airline: e.target.value})}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input label="Passport Number" value={form.passport_number} onChange={e => setForm({...form, passport_number: e.target.value})} />
+            <Input label="Passport Expiry" type="date" value={form.passport_expiry} onChange={e => setForm({...form, passport_expiry: e.target.value})} />
+          </div>
+
+          {/* 4. Flight Info */}
+          <div className="border-t border-[#e0e0e0] pt-4">
+            <p className="text-[12px] font-medium text-[#E74C3C] uppercase tracking-wider mb-3">Flight Information</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input label="Sector" value={form.sector} onChange={e => setForm({...form, sector: e.target.value})} placeholder="e.g. JED-MNL" />
+            <Select label="Airline" value={form.airline} onChange={e => setForm({...form, airline: e.target.value})}>
               <option value="">Select Airline</option>
               {airlines.map(a => <option key={a} value={a.trim()}>{a.trim()}</option>)}
-            </SelectField>
-            <InputField label="From *" value={form.flight_from} onChange={e => setForm({...form, flight_from: e.target.value})} required placeholder="e.g. JED" />
-            <InputField label="To *" value={form.flight_to} onChange={e => setForm({...form, flight_to: e.target.value})} required placeholder="e.g. MNL" />
+            </Select>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <InputField label="Departure Date *" type="date" value={form.departure_date} onChange={e => setForm({...form, departure_date: e.target.value})} required />
-            <InputField label="Return Date" type="date" value={form.return_date} onChange={e => setForm({...form, return_date: e.target.value})} />
-            <SelectField label="Payment Status" value={form.payment_status} onChange={e => setForm({...form, payment_status: e.target.value})}>
-              <option value="pending">Pending</option>
-              <option value="paid">Paid</option>
-              <option value="partial">Partial</option>
-            </SelectField>
+
+          {/* 5. Trip Type */}
+          <div className="border-t border-[#e0e0e0] pt-4">
+            <p className="text-[12px] font-medium text-[#E74C3C] uppercase tracking-wider mb-3">Trip Type</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <InputField label="Ticket Price" type="number" step="0.01" min="0" value={form.ticket_price} onChange={e => setForm({...form, ticket_price: e.target.value})} />
-            <InputField label="Selling Price" type="number" step="0.01" min="0" value={form.selling_price} onChange={e => setForm({...form, selling_price: e.target.value})} />
-            <InputField label="Commission" type="number" step="0.01" min="0" value={form.commission} onChange={e => setForm({...form, commission: e.target.value})} />
-            <InputField label="Payment Received" type="number" step="0.01" min="0" value={form.payment_received} onChange={e => setForm({...form, payment_received: e.target.value})} />
+          <div className="flex items-center gap-6">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="trip_type" value="one_way" checked={form.trip_type === 'one_way'}
+                onChange={e => setForm({...form, trip_type: e.target.value, return_date: ''})}
+                className="w-4 h-4 text-[#E74C3C] focus:ring-[#E74C3C]" />
+              <span className="text-[13px] text-[#202124] font-medium">One Way</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="trip_type" value="return" checked={form.trip_type === 'return'}
+                onChange={e => setForm({...form, trip_type: e.target.value})}
+                className="w-4 h-4 text-[#E74C3C] focus:ring-[#E74C3C]" />
+              <span className="text-[13px] text-[#202124] font-medium">Return</span>
+            </label>
           </div>
-          <div>
-            <label className="block text-[12px] font-medium text-[#5f6368] mb-1.5 uppercase tracking-wider">Notes</label>
-            <textarea value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} rows={3} className="w-full px-3 py-2.5 border border-[#dadce0] rounded-lg text-[13px] text-[#202124] focus:border-[#E74C3C] focus:ring-0 outline-none transition-colors resize-none" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input label="Departure Date" required type="datetime-local" value={form.departure_date} onChange={e => setForm({...form, departure_date: e.target.value})} />
+            {form.trip_type === 'return' && (
+              <Input label="Return / Arrival Date" type="datetime-local" value={form.return_date} onChange={e => setForm({...form, return_date: e.target.value})} />
+            )}
           </div>
+
+          {/* 6. Payment Info */}
+          <div className="border-t border-[#e0e0e0] pt-4">
+            <p className="text-[12px] font-medium text-[#E74C3C] uppercase tracking-wider mb-3">Payment Information</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input label="Total Payment" type="number" step="0.01" min="0" required value={form.total_payment}
+              onChange={e => setForm({...form, total_payment: e.target.value})} placeholder="Amount from passenger" />
+            <Input label="Received Payment" type="number" step="0.01" min="0" value={form.received_payment}
+              onChange={e => setForm({...form, received_payment: e.target.value})} placeholder="Amount received" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Select label="Payment Method" value={form.payment_method} onChange={e => setForm({...form, payment_method: e.target.value})}>
+              <option value="cash">Cash</option>
+              <option value="bank">Bank Transfer</option>
+            </Select>
+            <Input label="Payment Remarks" value={form.payment_remarks} onChange={e => setForm({...form, payment_remarks: e.target.value})} placeholder="e.g. Received 50,000 cash" />
+          </div>
+
+          {/* 7. Dues */}
+          <div className="bg-[#fef7e0] rounded-lg p-4">
+            <div className="flex justify-between items-center">
+              <span className="text-[13px] font-medium text-[#5f6368]">Dues (Total - Received)</span>
+              <span className={`text-[16px] font-medium ${preview.dues > 0 ? 'text-[#d93025]' : 'text-[#1e8e3e]'}`}>
+                PKR {preview.dues.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+          </div>
+
+          {/* 8. Purchase Rate */}
+          <div className="border-t border-[#e0e0e0] pt-4">
+            <p className="text-[12px] font-medium text-[#E74C3C] uppercase tracking-wider mb-3">Cost & Profit</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input label="Purchase Rate" type="number" step="0.01" min="0" required value={form.purchase_rate}
+              onChange={e => setForm({...form, purchase_rate: e.target.value})} placeholder="Cost from airline/supplier" />
+          </div>
+
+          {/* 9. Calculated profits */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-[#e6f4ea] rounded-lg p-4">
+              <p className="text-[11px] text-[#5f6368] uppercase tracking-wider font-medium mb-1">Ticket Profit / Commission</p>
+              <p className="text-[18px] font-medium text-[#1e8e3e]">
+                PKR {preview.profit.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+              </p>
+              <p className="text-[11px] text-[#5f6368] mt-1">= Total Payment - Purchase Rate</p>
+            </div>
+            <div className="bg-[#e8f0fe] rounded-lg p-4">
+              <p className="text-[11px] text-[#5f6368] uppercase tracking-wider font-medium mb-1">Agent Commission ({preview.pct}%)</p>
+              <p className="text-[18px] font-medium text-[#1a73e8]">
+                PKR {preview.agentComm.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+              </p>
+              <p className="text-[11px] text-[#5f6368] mt-1">= Ticket Profit x {preview.pct}%</p>
+            </div>
+          </div>
+
           <div className="flex justify-end gap-3 pt-3 border-t border-[#e0e0e0]">
             <button type="button" onClick={() => setModalOpen(false)} className="px-5 py-2.5 rounded-full text-[13px] font-medium text-[#5f6368] hover:bg-[#f1f3f4] transition-colors">Cancel</button>
             <button type="submit" className="px-5 py-2.5 bg-[#E74C3C] text-white rounded-full text-[13px] font-medium hover:bg-[#C0392B] hover:shadow-[0_1px_3px_0_rgba(60,64,67,0.3)] transition-all">{editingId ? 'Update' : 'Create'}</button>

@@ -143,7 +143,7 @@ from auth import (
     get_password_hash, verify_password, create_access_token,
     create_refresh_token, decode_token, get_current_user, SECRET_KEY
 )
-from routers import agents, tickets, visas, cashouts, settings, dashboard, backup, export, alerts, activity
+from routers import agents, tickets, visas, cashouts, settings, dashboard, backup, export, alerts, activity, payments
 from schemas import PasswordChangeRequest
 import apscheduler.schedulers.background
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -170,6 +170,7 @@ app.include_router(agents.router)
 app.include_router(tickets.router)
 app.include_router(visas.router)
 app.include_router(cashouts.router)
+app.include_router(payments.router)
 app.include_router(settings.router)
 app.include_router(dashboard.router)
 app.include_router(backup.router)

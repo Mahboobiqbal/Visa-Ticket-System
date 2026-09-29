@@ -127,15 +127,15 @@ export default function CashOut() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
         <div className="bg-white rounded-xl border border-[#e0e0e0] p-5 hover:shadow-[0_1px_3px_0_rgba(60,64,67,0.3),0_4px_8px_3px_rgba(60,64,67,0.15)] transition-shadow">
           <p className="text-[12px] text-[#5f6368] uppercase tracking-wide font-medium">Total Cash Out</p>
-          <p className="text-[24px] font-normal text-[#202124] mt-1">SAR {(totalCash + totalBank).toLocaleString()}</p>
+          <p className="text-[24px] font-normal text-[#202124] mt-1">PKR {(totalCash + totalBank).toLocaleString()}</p>
         </div>
         <div className="bg-white rounded-xl border border-[#e0e0e0] p-5 hover:shadow-[0_1px_3px_0_rgba(60,64,67,0.3),0_4px_8px_3px_rgba(60,64,67,0.15)] transition-shadow">
           <p className="text-[12px] text-[#5f6368] uppercase tracking-wide font-medium">Cash Payments</p>
-          <p className="text-[24px] font-normal text-[#e37400] mt-1">SAR {totalCash.toLocaleString()}</p>
+          <p className="text-[24px] font-normal text-[#e37400] mt-1">PKR {totalCash.toLocaleString()}</p>
         </div>
         <div className="bg-white rounded-xl border border-[#e0e0e0] p-5 hover:shadow-[0_1px_3px_0_rgba(60,64,67,0.3),0_4px_8px_3px_rgba(60,64,67,0.15)] transition-shadow">
           <p className="text-[12px] text-[#5f6368] uppercase tracking-wide font-medium">Bank Transfers</p>
-          <p className="text-[24px] font-normal text-[#E74C3C] mt-1">SAR {totalBank.toLocaleString()}</p>
+          <p className="text-[24px] font-normal text-[#E74C3C] mt-1">PKR {totalBank.toLocaleString()}</p>
         </div>
       </div>
 
@@ -185,7 +185,7 @@ export default function CashOut() {
                 <tr key={c.id} className="border-b border-[#f0f0f0] last:border-0 gmail-row cursor-pointer" onClick={() => navigate(`/cashout/${c.id}`)}>
                   <td className="px-5 py-3 text-[13px] font-medium text-[#202124]">{c.name}</td>
                   <td className="px-5 py-3 text-[13px] text-[#5f6368]">{c.agent_name || '—'}</td>
-                  <td className="px-5 py-3 text-[13px] text-[#202124]">SAR {c.amount.toLocaleString()}</td>
+                  <td className="px-5 py-3 text-[13px] text-[#202124]">PKR {c.amount.toLocaleString()}</td>
                   <td className="px-5 py-3 text-[13px] text-[#5f6368]">{c.date}</td>
                   <td className="px-5 py-3">
                     <span className={`gmail-badge ${c.payment_method === 'cash' ? 'bg-[#fef7e0] text-[#e37400]' : 'bg-[#f0f0f0] text-[#E74C3C]'}`}>

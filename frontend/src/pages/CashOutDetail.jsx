@@ -78,7 +78,7 @@ export default function CashOutDetail() {
           </div>
           <div>
             <p className="text-[12px] text-[#5f6368] uppercase tracking-wider">Amount</p>
-            <p className="text-[32px] font-normal text-[#202124]">SAR {cashout.amount.toLocaleString()}</p>
+            <p className="text-[32px] font-normal text-[#202124]">PKR {cashout.amount.toLocaleString()}</p>
           </div>
         </div>
 
@@ -140,7 +140,7 @@ export default function CashOutDetail() {
 
       <PrintSlip isOpen={printOpen} onClose={() => setPrintOpen(false)} title="CASH OUT SLIP">
         <SlipRow label="Name" value={cashout.name} bold />
-        <SlipRow label="Amount" value={`SAR ${cashout.amount.toLocaleString()}`} bold />
+        <SlipRow label="Amount" value={`PKR ${cashout.amount.toLocaleString()}`} bold />
         <SlipRow label="Date" value={cashout.date} />
         <SlipRow label="Payment Method" value={cashout.payment_method === 'online_bank' ? 'Online Bank' : 'Cash'} />
         {cashout.agent_name && <SlipRow label="Agent" value={cashout.agent_name} />}

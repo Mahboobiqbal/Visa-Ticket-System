@@ -38,22 +38,34 @@ class TicketBooking(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     agent_id = Column(Integer, ForeignKey("agents.id", ondelete="SET NULL"), nullable=True)
+    agent_commission_percentage = Column(Float, default=0.0)
+
+    pnr_number = Column(String, default="")
+
     passenger_name = Column(String)
+    contact_number = Column(String, default="")
+    dob = Column(String, default="")
     passport_number = Column(String, default="")
     passport_expiry = Column(String, default="")
-    phone = Column(String, default="")
+
+    sector = Column(String, default="")
     airline = Column(String, default="")
-    flight_from = Column(String)
-    flight_to = Column(String)
-    booking_ref = Column(String, default="")
-    departure_date = Column(String)
+
+    trip_type = Column(String, default="one_way")
+    departure_date = Column(String, default="")
     return_date = Column(String, default="")
-    ticket_price = Column(Float, default=0.0)
-    selling_price = Column(Float, default=0.0)
-    commission = Column(Float, default=0.0)
-    payment_received = Column(Float, default=0.0)
+
+    total_payment = Column(Float, default=0.0)
+    received_payment = Column(Float, default=0.0)
+    payment_method = Column(String, default="cash")
+    payment_remarks = Column(Text, default="")
+    dues = Column(Float, default=0.0)
     payment_status = Column(String, default="pending")
-    notes = Column(Text, default="")
+
+    purchase_rate = Column(Float, default=0.0)
+    ticket_profit = Column(Float, default=0.0)
+    agent_commission = Column(Float, default=0.0)
+
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
@@ -65,21 +77,29 @@ class VisaProcessing(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     agent_id = Column(Integer, ForeignKey("agents.id", ondelete="SET NULL"), nullable=True)
+
     passenger_name = Column(String)
+    contact_number = Column(String, default="")
     passport_number = Column(String, default="")
-    phone = Column(String, default="")
-    occupation = Column(String, default="")
+    dob = Column(String, default="")
+    passport_expiry = Column(String, default="")
     visa_type = Column(String, default="umrah")
-    package = Column(String, default="basic")
+    visa_number = Column(String, default="")
+    sponsor_number = Column(String, default="")
+    occupation = Column(String, default="")
+
+    visa_process_charges = Column(Float, default=0.0)
+    medical_token_charges = Column(Float, default=0.0)
+    agreement_paper_charges = Column(Float, default=0.0)
+    extra_charges = Column(Float, default=0.0)
     total_charges = Column(Float, default=0.0)
-    package_price = Column(Float, default=0.0)
-    total_commission = Column(Float, default=0.0)
-    payment_received = Column(Float, default=0.0)
-    payment_type = Column(String, default="cash")
-    payment_cash = Column(Float, default=0.0)
-    payment_bank = Column(Float, default=0.0)
-    total_expenses = Column(Float, default=0.0)
-    analysis = Column(Text, default="")
+
+    received = Column(Float, default=0.0)
+    dues = Column(Float, default=0.0)
+
+    purchase_rate = Column(Float, default=0.0)
+    commission = Column(Float, default=0.0)
+
     status = Column(String, default="pending")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

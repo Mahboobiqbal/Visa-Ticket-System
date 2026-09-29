@@ -67,63 +67,68 @@ class AgentOut(BaseModel):
 # Ticket Booking
 class TicketCreate(BaseModel):
     agent_id: int = Field(gt=0)
+    pnr_number: str = ""
     passenger_name: str
+    contact_number: str = ""
+    dob: str = ""
     passport_number: str = ""
     passport_expiry: str = ""
-    phone: str = ""
+    sector: str = ""
     airline: str = ""
-    flight_from: str
-    flight_to: str
-    booking_ref: str = ""
+    trip_type: Literal["one_way", "return"] = "one_way"
     departure_date: str
     return_date: str = ""
-    ticket_price: float = Field(default=0.0, ge=0)
-    selling_price: float = Field(default=0.0, ge=0)
-    commission: float = Field(default=0.0, ge=0)
-    payment_received: float = Field(default=0.0, ge=0)
-    payment_status: Literal["pending", "paid", "partial"] = "pending"
-    notes: str = ""
+    total_payment: float = Field(default=0.0, ge=0)
+    received_payment: float = Field(default=0.0, ge=0)
+    payment_method: Literal["cash", "bank"] = "cash"
+    payment_remarks: str = ""
+    purchase_rate: float = Field(default=0.0, ge=0)
 
 
 class TicketUpdate(BaseModel):
     agent_id: Optional[int] = Field(default=None, gt=0)
+    pnr_number: Optional[str] = None
     passenger_name: Optional[str] = None
+    contact_number: Optional[str] = None
+    dob: Optional[str] = None
     passport_number: Optional[str] = None
     passport_expiry: Optional[str] = None
-    phone: Optional[str] = None
+    sector: Optional[str] = None
     airline: Optional[str] = None
-    flight_from: Optional[str] = None
-    flight_to: Optional[str] = None
-    booking_ref: Optional[str] = None
+    trip_type: Optional[Literal["one_way", "return"]] = None
     departure_date: Optional[str] = None
     return_date: Optional[str] = None
-    ticket_price: Optional[float] = Field(default=None, ge=0)
-    selling_price: Optional[float] = Field(default=None, ge=0)
-    commission: Optional[float] = Field(default=None, ge=0)
-    payment_received: Optional[float] = Field(default=None, ge=0)
-    payment_status: Optional[Literal["pending", "paid", "partial"]] = None
-    notes: Optional[str] = None
+    total_payment: Optional[float] = Field(default=None, ge=0)
+    received_payment: Optional[float] = Field(default=None, ge=0)
+    payment_method: Optional[Literal["cash", "bank"]] = None
+    payment_remarks: Optional[str] = None
+    purchase_rate: Optional[float] = Field(default=None, ge=0)
 
 
 class TicketOut(BaseModel):
     id: int
-    agent_id: int
+    agent_id: Optional[int] = None
+    agent_commission_percentage: float
+    pnr_number: str
     passenger_name: str
+    contact_number: str
+    dob: str
     passport_number: str
     passport_expiry: str
-    phone: str
+    sector: str
     airline: str
-    flight_from: str
-    flight_to: str
-    booking_ref: str
+    trip_type: str
     departure_date: str
     return_date: str
-    ticket_price: float
-    selling_price: float
-    commission: float
-    payment_received: float
+    total_payment: float
+    received_payment: float
+    payment_method: str
+    payment_remarks: str
+    dues: float
     payment_status: str
-    notes: str
+    purchase_rate: float
+    ticket_profit: float
+    agent_commission: float
     created_at: datetime
     agent_name: str = ""
 
@@ -135,61 +140,64 @@ class TicketOut(BaseModel):
 class VisaCreate(BaseModel):
     agent_id: int = Field(gt=0)
     passenger_name: str
+    contact_number: str = ""
     passport_number: str = ""
-    phone: str = ""
-    occupation: str = ""
+    dob: str = ""
+    passport_expiry: str = ""
     visa_type: str = "umrah"
-    package: str = "basic"
-    total_charges: float = Field(default=0.0, ge=0)
-    package_price: float = Field(default=0.0, ge=0)
-    total_commission: float = Field(default=0.0, ge=0)
-    payment_received: float = Field(default=0.0, ge=0)
-    payment_type: Literal["cash", "online_bank"] = "cash"
-    payment_cash: float = Field(default=0.0, ge=0)
-    payment_bank: float = Field(default=0.0, ge=0)
-    total_expenses: float = Field(default=0.0, ge=0)
-    analysis: str = ""
+    visa_number: str = ""
+    sponsor_number: str = ""
+    occupation: str = ""
+    visa_process_charges: float = Field(default=0.0, ge=0)
+    medical_token_charges: float = Field(default=0.0, ge=0)
+    agreement_paper_charges: float = Field(default=0.0, ge=0)
+    extra_charges: float = Field(default=0.0, ge=0)
+    received: float = Field(default=0.0, ge=0)
+    purchase_rate: float = Field(default=0.0, ge=0)
     status: Literal["pending", "approved", "rejected"] = "pending"
 
 
 class VisaUpdate(BaseModel):
     agent_id: Optional[int] = Field(default=None, gt=0)
     passenger_name: Optional[str] = None
+    contact_number: Optional[str] = None
     passport_number: Optional[str] = None
-    phone: Optional[str] = None
-    occupation: Optional[str] = None
+    dob: Optional[str] = None
+    passport_expiry: Optional[str] = None
     visa_type: Optional[str] = None
-    package: Optional[str] = None
-    total_charges: Optional[float] = Field(default=None, ge=0)
-    package_price: Optional[float] = Field(default=None, ge=0)
-    total_commission: Optional[float] = Field(default=None, ge=0)
-    payment_received: Optional[float] = Field(default=None, ge=0)
-    payment_type: Optional[Literal["cash", "online_bank"]] = None
-    payment_cash: Optional[float] = Field(default=None, ge=0)
-    payment_bank: Optional[float] = Field(default=None, ge=0)
-    total_expenses: Optional[float] = Field(default=None, ge=0)
-    analysis: Optional[str] = None
+    visa_number: Optional[str] = None
+    sponsor_number: Optional[str] = None
+    occupation: Optional[str] = None
+    visa_process_charges: Optional[float] = Field(default=None, ge=0)
+    medical_token_charges: Optional[float] = Field(default=None, ge=0)
+    agreement_paper_charges: Optional[float] = Field(default=None, ge=0)
+    extra_charges: Optional[float] = Field(default=None, ge=0)
+    received: Optional[float] = Field(default=None, ge=0)
+    purchase_rate: Optional[float] = Field(default=None, ge=0)
     status: Optional[Literal["pending", "approved", "rejected"]] = None
 
 
 class VisaOut(BaseModel):
     id: int
-    agent_id: int
+    agent_id: Optional[int] = None
     passenger_name: str
+    contact_number: str
     passport_number: str
-    phone: str
-    occupation: str
+    dob: str
+    passport_expiry: str
     visa_type: str
-    package: str
+    visa_number: str
+    sponsor_number: str
+    occupation: str
+    visa_process_charges: float
+    medical_token_charges: float
+    agreement_paper_charges: float
+    extra_charges: float
     total_charges: float
-    package_price: float
-    total_commission: float
-    payment_received: float
-    payment_type: str
-    payment_cash: float
-    payment_bank: float
-    total_expenses: float
-    analysis: str
+    received: float
+    dues: float
+    purchase_rate: float
+    commission: float
     status: str
     created_at: datetime
     agent_name: str = ""

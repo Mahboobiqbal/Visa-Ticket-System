@@ -6,7 +6,7 @@ import { Clock, Ticket, Stamp, Users, Banknote, ChevronLeft, ChevronRight } from
 const entityIcons = {
   ticket: { icon: Ticket, color: '#E74C3C', link: '/tickets/' },
   visa: { icon: Stamp, color: '#e37400', link: '/visas/' },
-  cashout: { icon: Banknote, color: '#1a73e8', link: '/cashout/' },
+  cashout: { icon: Banknote, color: '#1a73e8', link: '/payments/' },
   agent: { icon: Users, color: '#1e8e3e', link: '/agents/' },
 };
 

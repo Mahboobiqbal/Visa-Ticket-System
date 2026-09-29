@@ -50,23 +50,23 @@ def get_dashboard(
     total_agents = db.query(Agent).count()
 
     # Revenue
-    total_revenue_ticket = ticket_query.with_entities(func.sum(TicketBooking.selling_price)).scalar() or 0
+    total_revenue_ticket = ticket_query.with_entities(func.sum(TicketBooking.total_payment)).scalar() or 0
     total_revenue_visa = visa_query.with_entities(func.sum(VisaProcessing.total_charges)).scalar() or 0
     total_revenue = total_revenue_ticket + total_revenue_visa
 
     # Commission
-    total_commission_ticket = ticket_query.with_entities(func.sum(TicketBooking.commission)).scalar() or 0
-    total_commission_visa = visa_query.with_entities(func.sum(VisaProcessing.total_commission)).scalar() or 0
+    total_commission_ticket = ticket_query.with_entities(func.sum(TicketBooking.agent_commission)).scalar() or 0
+    total_commission_visa = visa_query.with_entities(func.sum(VisaProcessing.commission)).scalar() or 0
     total_commission = total_commission_ticket + total_commission_visa
 
-    # Expenses
-    total_expenses = visa_query.with_entities(func.sum(VisaProcessing.total_expenses)).scalar() or 0
+    # Expenses (visas no longer track expenses separately)
+    total_expenses = 0
 
     # Pending payments
-    pending_ticket_query = db.query(func.sum(TicketBooking.selling_price - TicketBooking.payment_received)).filter(
+    pending_ticket_query = db.query(func.sum(TicketBooking.dues)).filter(
         TicketBooking.payment_status != "paid"
     )
-    pending_visa_query = db.query(func.sum(VisaProcessing.total_charges - VisaProcessing.payment_received))
+    pending_visa_query = db.query(func.sum(VisaProcessing.dues))
     if date_from:
         pending_ticket_query = pending_ticket_query.filter(TicketBooking.created_at >= date_from)
         pending_visa_query = pending_visa_query.filter(VisaProcessing.created_at >= date_from)
@@ -80,10 +80,9 @@ def get_dashboard(
             "id": t.id,
             "passenger_name": t.passenger_name,
             "airline": t.airline,
-            "flight_from": t.flight_from,
-            "flight_to": t.flight_to,
+            "sector": t.sector,
             "departure_date": t.departure_date,
-            "selling_price": t.selling_price,
+            "total_payment": t.total_payment,
             "payment_status": t.payment_status,
             "agent_name": agents_map.get(t.agent_id, ""),
         }
@@ -97,7 +96,6 @@ def get_dashboard(
             "id": v.id,
             "passenger_name": v.passenger_name,
             "visa_type": v.visa_type,
-            "package": v.package,
             "total_charges": v.total_charges,
             "status": v.status,
             "agent_name": agents_map.get(v.agent_id, ""),
@@ -116,7 +114,7 @@ def get_dashboard(
         else:
             next_month = now + timedelta(days=1)
 
-        ticket_rev = db.query(func.sum(TicketBooking.selling_price)).filter(
+        ticket_rev = db.query(func.sum(TicketBooking.total_payment)).filter(
             TicketBooking.created_at >= month_start,
             TicketBooking.created_at < next_month
         ).scalar() or 0
@@ -134,16 +132,16 @@ def get_dashboard(
     # Top agents by revenue
     agent_revenues = []
     for agent in db.query(Agent).filter(Agent.status == "active").all():
-        ticket_rev = db.query(func.sum(TicketBooking.selling_price)).filter(
+        ticket_rev = db.query(func.sum(TicketBooking.total_payment)).filter(
             TicketBooking.agent_id == agent.id
         ).scalar() or 0
         visa_rev = db.query(func.sum(VisaProcessing.total_charges)).filter(
             VisaProcessing.agent_id == agent.id
         ).scalar() or 0
-        ticket_comm = db.query(func.sum(TicketBooking.commission)).filter(
+        ticket_comm = db.query(func.sum(TicketBooking.agent_commission)).filter(
             TicketBooking.agent_id == agent.id
         ).scalar() or 0
-        visa_comm = db.query(func.sum(VisaProcessing.total_commission)).filter(
+        visa_comm = db.query(func.sum(VisaProcessing.commission)).filter(
             VisaProcessing.agent_id == agent.id
         ).scalar() or 0
         total = ticket_rev + visa_rev
